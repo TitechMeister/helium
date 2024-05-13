@@ -1,7 +1,7 @@
 use crate::parse::Data;
 use byteorder::{BigEndian, ByteOrder};
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub struct IMUData{
     pub id: u8,
     pub timestamp: u32,
@@ -21,5 +21,13 @@ impl Data for IMUData{
             q_y: BigEndian::read_i16(&data[12..14]),
             q_z: BigEndian::read_i16(&data[14..16]),
         }
+    }
+    fn draw(&self,ui:&mut eframe::egui::Ui) {
+        ui.label(format!("q_w:{}",self.q_w));
+        ui.label(format!("q_x:{}",self.q_x));
+        ui.label(format!("q_y:{}",self.q_y));
+        ui.label(format!("q_z:{}",self.q_z));
+        ui.add_space(10.0);
+        ui.label(format!("timestamp:\t{}ms",self.timestamp));
     }
 }

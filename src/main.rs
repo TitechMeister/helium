@@ -3,19 +3,21 @@
 
 mod parse;
 
-use eframe::egui;
-use egui_dropdown::DropDownBox;
+use eframe::{egui,egui::IconData};
+
 use log::info;
 use serialport::available_ports;
 
-use crate::parse::Parser;
-use std::{env, fmt::format};
+use crate::parse::{Data, Parser};
+use std::env;
 
 fn main() -> Result<(), eframe::Error> {
-    env::set_var("RUST_LOG", "info");
+    env::set_var("RUST_LOG", "debug");
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
     let options = eframe::NativeOptions {
-        viewport: egui::ViewportBuilder::default().with_inner_size([320.0, 240.0]),
+        viewport: egui::ViewportBuilder::default()
+            .with_inner_size([640.0, 320.0])
+            .with_icon(load_icon()),
         ..Default::default()
     };
     eframe::run_native(
@@ -49,75 +51,39 @@ impl eframe::App for MeisterApp {
                 Some(_) => {
                     ui.label(format!("Connected to port: {}", self.port));
 
-                    egui::Window::new("IMU").vscroll(true).show(ctx, |ui| {
-                        if let Some(imu) = self.parser.get_imu().last() {
-                            ui.label(format!("id: {}", imu.id));
-                            ui.label(format!("timestamp: {}", imu.timestamp));
-                            ui.label(format!("q_w: {}", imu.q_w));
-                            ui.label(format!("q_x: {}", imu.q_x));
-                            ui.label(format!("q_y: {}", imu.q_y));
-                            ui.label(format!("q_z: {}", imu.q_z));
-                        }else{
-                            ui.label("No IMU data available");
-                        }
-                    });
-
-                    egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
-                        if let Some(alt) = self.parser.get_alt_data().last() {
-                            ui.label(format!("id: {}", alt.id));
-                            ui.label(format!("timestamp: {}", alt.timestamp));
-                            ui.label(format!("altitude: {}", alt.altitude));
-                        }else{
-                            ui.label("No Altitude data available");
-                        }
-                    });
-
-                    egui::Window::new("Servo Data")
-                        .vscroll(true)
-                        .show(ctx, |ui| {
-                            if let Some(servo_data) = self.parser.get_servo_data().last() {
-                                ui.label(format!("id: {}", servo_data.id));
-                                ui.label(format!("timestamp: {}", servo_data.timestamp));
-                                ui.label(format!("rudder: {}", servo_data.rudder));
-                                ui.label(format!("elevator: {}", servo_data.elevator));
-                                ui.label(format!("voltage: {}", servo_data.voltage));
-                                ui.label(format!("current_rudder: {}", servo_data.current_rudder));
-                                ui.label(format!(
-                                    "current_elevator: {}",
-                                    servo_data.current_elevator
-                                ));
-                                ui.label(format!("trim: {}", servo_data.trim));
-                                ui.label(format!("status: {}", servo_data.status));
-                            }else{
-                                ui.label("No Servo data available");
-                            }
+                    if let Some(imu_data) = self.parser.get_imu().last() {
+                        egui::Window::new("IMU").vscroll(true).show(ctx, |ui| {
+                            imu_data.draw(ui);
                         });
+                    }
+
+                    if let Some(alt_data) = self.parser.get_alt_data().last() {
+                        egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
+                            alt_data.draw(ui);
+                        });
+                    }
+
+                    if let Some(servo_data) = self.parser.get_servo_data().last() {
+                        egui::Window::new("Servo").vscroll(true).show(ctx, |ui| {
+                            servo_data.draw(ui);
+                        });
+                    }
                 }
                 None => {
-                    ui.add(
-                        DropDownBox::from_iter(
-                            match available_ports() {
-                                Ok(ports) => ports
-                                    .iter()
-                                    .into_iter()
-                                    .map(|port| port.port_name.clone())
-                                    .collect(),
-                                Err(e) => {
-                                    println!("Error: {:?}", e);
-                                    vec![]
+                    ui.horizontal(|ui| {
+                        
+                        match available_ports() {
+                            Ok(ports) => {
+                                ui.label("Available ports:\t");
+                                for port in ports {
+                                    ui.selectable_value(&mut self.port,port.port_name.clone(), port.port_name.clone());
                                 }
-                            },
-                            "port",
-                            &mut self.port,
-                            |ui, text| ui.selectable_label(false, text),
-                        )
-                        // choose whether to select all text in the text edit when it gets focused
-                        // default is false when this is not used
-                        .select_on_focus(true)
-                        // passes through the desired width to the text edit
-                        // default is None internally, so TextEdit does whatever its default implements
-                        .desired_width(250.0),
-                    );
+                            }
+                            Err(e) => {
+                                println!("Error: {:?}", e);
+                            }
+                        }
+                    });
 
                     if ui
                         .button("Connect")
@@ -137,5 +103,23 @@ impl eframe::App for MeisterApp {
                 }
             }
         });
+    }
+}
+
+pub(crate) fn load_icon() -> IconData {
+    let (icon_rgba, icon_width, icon_height) = {
+        let icon = include_bytes!("../assets/logo.png");
+        let image = image::load_from_memory(icon)
+            .expect("Failed to open icon path")
+            .into_rgba8();
+        let (width, height) = image.dimensions();
+        let rgba = image.into_raw();
+        (rgba, width, height)
+    };
+
+    IconData {
+        rgba: icon_rgba,
+        width: icon_width,
+        height: icon_height,
     }
 }

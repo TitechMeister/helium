@@ -1,5 +1,6 @@
 use log::info;
-
+use std::fs::OpenOptions;
+use std::io::prelude::*;
 use crate::parse::{decode_cobs, AltData, Data, IMUData, ServoData};
 
 pub struct Parser {
@@ -48,12 +49,22 @@ impl Parser {
         &self.alt_data
     }
 
+    #[allow(unused_assignments)]
     pub fn parse(&mut self) {
         let mut serial_buf = [0; 1024];
         match self.port {
             Some(ref mut port) => match port.read(serial_buf.as_mut_slice()) {
                 Ok(n) => {
                     log::info!("recv:{:?}", &serial_buf[..n]);
+
+                    let mut file = OpenOptions::new()
+                        .write(true)
+                        .append(true)
+                        .create(true)
+                        .open("log.bin")
+                        .unwrap();
+                    file.write_all(&serial_buf[..n]).unwrap();
+
                     self.log.extend(serial_buf[..n].iter());
                     let mut decoded: Vec<u8> = vec![];
                     let mut rest: Vec<u8> = vec![];
@@ -65,15 +76,25 @@ impl Parser {
                                 for i in 0..5 {
                                     self.imu.push(Box::new(IMUData::parse(&decoded[i*16..(i+1)*16].to_vec())));
                                 }
+                                if self.imu.len() > 200 {
+                                    self.imu = self.imu[self.imu.len()-100..].to_vec();
+                                }
                             }
                             0x10 => {
                                 self.servo_data
                                     .push(Box::new(ServoData::parse(&decoded.to_vec())));
                                 info!("{:?}", self.servo_data.last().unwrap());
+                                if self.servo_data.len() > 200 {
+                                    self.servo_data = self.servo_data[self.servo_data.len()-100..].to_vec();
+                                }
                             }
                             0x50 => {
                                 self.alt_data
                                     .push(Box::new(AltData::parse(&decoded.to_vec())));
+                                info!("{:?}", self.alt_data.last().unwrap());
+                                if self.alt_data.len() > 200 {
+                                    self.alt_data = self.alt_data[self.alt_data.len()-100..].to_vec();
+                                }
                             }
                             _ => (),
                         }
