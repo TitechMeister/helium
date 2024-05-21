@@ -3,7 +3,9 @@
 
 mod parse;
 
-use eframe::{egui,egui::IconData};
+use eframe::{egui, egui::IconData};
+
+use egui_plot;
 
 use log::info;
 use serialport::available_ports;
@@ -50,16 +52,45 @@ impl eframe::App for MeisterApp {
             match self.parser.get_port() {
                 Some(_) => {
                     ui.label(format!("Connected to port: {}", self.port));
+                    ui.add_space(10.0);
+                    ui.horizontal(|ui| {
+                        let filename_label = ui.label("filename:");
+                        ui.text_edit_singleline(&mut self.parser.filename)
+                            .labelled_by(filename_label.id);
+                    });
 
-                    if let Some(imu_data) = self.parser.get_imu().last() {
-                        egui::Window::new("IMU").vscroll(true).show(ctx, |ui| {
-                            imu_data.draw(ui);
-                        });
+                    for i in 0..3 {
+                        if let Some(imu_data) = self.parser.get_imu(i as u8).last() {
+                            egui::Window::new(format!("IMU{:02x}", i))
+                                .vscroll(true)
+                                .show(ctx, |ui| {
+                                    imu_data.draw(ui);
+                                });
+                        }
                     }
 
                     if let Some(alt_data) = self.parser.get_alt_data().last() {
                         egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
-                            alt_data.draw(ui);
+                            ui.heading(format!(
+                                "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
+                                alt_data.altitude / 100.0,
+                                alt_data.timestamp
+                            ));
+                            let plt = egui_plot::Plot::new("Altitude");
+                            let point: egui_plot::PlotPoints = self
+                                .parser
+                                .get_alt_data()
+                                .iter()
+                                .enumerate()
+                                .map(|(n,data)| [n as f64, data.altitude as f64 / 100.0])
+                                .collect();
+                            let line=egui_plot::Line::new(point)
+                                .color(egui::Color32::from_rgb(255, 0, 0))
+                                .name("altitude");
+                            plt.show(ui, |plot_ui| {
+                                plot_ui.line(line);
+                            });
+                            
                         });
                     }
 
@@ -70,18 +101,19 @@ impl eframe::App for MeisterApp {
                     }
                 }
                 None => {
-                    ui.horizontal(|ui| {
-                        
-                        match available_ports() {
-                            Ok(ports) => {
-                                ui.label("Available ports:\t");
-                                for port in ports {
-                                    ui.selectable_value(&mut self.port,port.port_name.clone(), port.port_name.clone());
-                                }
+                    ui.horizontal(|ui| match available_ports() {
+                        Ok(ports) => {
+                            ui.label("Available ports:\t");
+                            for port in ports {
+                                ui.selectable_value(
+                                    &mut self.port,
+                                    port.port_name.clone(),
+                                    port.port_name.clone(),
+                                );
                             }
-                            Err(e) => {
-                                println!("Error: {:?}", e);
-                            }
+                        }
+                        Err(e) => {
+                            println!("Error: {:?}", e);
                         }
                     });
 
@@ -97,6 +129,7 @@ impl eframe::App for MeisterApp {
                             }
                             Err(e) => {
                                 println!("Error: {:?}", e);
+                                ui.label("Failed to connect");
                             }
                         }
                     };

@@ -5,7 +5,8 @@ use crate::parse::{decode_cobs, AltData, Data, IMUData, ServoData};
 
 pub struct Parser {
     log: Vec<u8>,
-    imu: Vec<Box<IMUData>>,
+    pub filename: String,
+    imu: [Vec<Box<IMUData>>;3],
     servo_data: Vec<Box<ServoData>>,
     alt_data: Vec<Box<AltData>>,
     port: Option<Box<dyn serialport::SerialPort>>,
@@ -15,7 +16,8 @@ impl Parser {
     pub fn new() -> Self {
         Self {
             log: Vec::new(),
-            imu: Vec::new(),
+            filename : "log.bin".to_owned(),
+            imu: [Vec::new(),Vec::new(),Vec::new()],
             servo_data: Vec::new(),
             alt_data: Vec::new(),
             port: None,
@@ -37,8 +39,8 @@ impl Parser {
         }
     }
 
-    pub fn get_imu(&self) -> &Vec<Box<IMUData>> {
-        &self.imu
+    pub fn get_imu(&self,id:u8) -> &Vec<Box<IMUData>> {
+        &self.imu[(id&0x0f) as usize]
     }
 
     pub fn get_servo_data(&self) -> &Vec<Box<ServoData>> {
@@ -61,7 +63,7 @@ impl Parser {
                         .write(true)
                         .append(true)
                         .create(true)
-                        .open("log.bin")
+                        .open(&self.filename)
                         .unwrap();
                     file.write_all(&serial_buf[..n]).unwrap();
 
@@ -73,18 +75,18 @@ impl Parser {
                         log::info!("{:?}", decoded);
                         match decoded[0] & 0xF0 {
                             0x40 => {
-                                for i in 0..5 {
-                                    self.imu.push(Box::new(IMUData::parse(&decoded[i*16..(i+1)*16].to_vec())));
+                                for i in 0..(decoded.len() / 16){
+                                    self.imu[(decoded[0]&0x0F) as usize].push(Box::new(IMUData::parse(&decoded[i*16..(i+1)*16].to_vec())));
                                 }
-                                if self.imu.len() > 200 {
-                                    self.imu = self.imu[self.imu.len()-100..].to_vec();
+                                if self.imu[(decoded[0]&0x0F) as usize].len() > 100 {
+                                    self.imu[(decoded[0]&0x0F) as usize] = self.imu[(decoded[0]&0x0F) as usize][self.imu.len()-100..].to_vec();
                                 }
                             }
                             0x10 => {
                                 self.servo_data
                                     .push(Box::new(ServoData::parse(&decoded.to_vec())));
                                 info!("{:?}", self.servo_data.last().unwrap());
-                                if self.servo_data.len() > 200 {
+                                if self.servo_data.len() > 100 {
                                     self.servo_data = self.servo_data[self.servo_data.len()-100..].to_vec();
                                 }
                             }
@@ -92,7 +94,7 @@ impl Parser {
                                 self.alt_data
                                     .push(Box::new(AltData::parse(&decoded.to_vec())));
                                 info!("{:?}", self.alt_data.last().unwrap());
-                                if self.alt_data.len() > 200 {
+                                if self.alt_data.len() > 100 {
                                     self.alt_data = self.alt_data[self.alt_data.len()-100..].to_vec();
                                 }
                             }

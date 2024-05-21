@@ -23,10 +23,10 @@ impl Data for IMUData{
         }
     }
     fn draw(&self,ui:&mut eframe::egui::Ui) {
-        ui.label(format!("q_w:{}",self.q_w));
-        ui.label(format!("q_x:{}",self.q_x));
-        ui.label(format!("q_y:{}",self.q_y));
-        ui.label(format!("q_z:{}",self.q_z));
+        ui.label(format!("q_w:{}",(self.q_w as f32)/16384.0));
+        ui.label(format!("q_x:{}",(self.q_x as f32)/16384.0));
+        ui.label(format!("q_y:{}",(self.q_y as f32)/16384.0));
+        ui.label(format!("q_z:{}",(self.q_z as f32)/16384.0));
         ui.add_space(10.0);
         ui.label(format!("timestamp:\t{}ms",self.timestamp));
     }
