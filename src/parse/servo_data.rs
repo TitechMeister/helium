@@ -41,7 +41,7 @@ impl Data for ServoData{
         }
         ui.add(eframe::egui::widgets::ProgressBar::new(self.current_rudder/2000.0+0.5).text(format!("i_ruuder:\t{:4.2}mA",self.current_rudder)));
         ui.add(eframe::egui::widgets::ProgressBar::new(self.current_elevator/2000.0+0.5).text(format!("i_elevator:\t{:4.2}mA",self.current_elevator)));
-        ui.label(format!("status:\t{}",self.status));
+        ui.heading(format!("status:\t{}",self.status));
         ui.add_space(10.0);
         ui.label(format!("timestamp:\t{}ms",self.timestamp));
     }
