@@ -15,6 +15,5 @@ pub use parser::Parser;
 
 pub trait Data{
     fn parse(data: &Vec<u8>) -> Self;
-    fn draw(&self,ui:&mut eframe::egui::Ui);
 }
 

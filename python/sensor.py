@@ -3,7 +3,6 @@ from abc import ABCMeta, abstractmethod
 import numpy as np
 
 class Sensor(metaclass=ABCMeta):
-    id=0x00
     @abstractmethod
     def parse(self,array:list[int]):
         raise NotImplementedError
@@ -19,8 +18,6 @@ class ServoController(Sensor):
             "trim":[],
             "status":[]
             }
-    id=0x10
-
     def parse(self, array: list[int]):
         _id,timestamp,rudder,elevator,voltage,i_rudder,i_elevator,trim,status=struct.unpack(">BxxxIffffffBxxx",bytes(array))
         self.raw_data["timestamp"].append(timestamp)
@@ -39,32 +36,32 @@ class Pitot(Sensor):
             "temperature":[],
             "velocity":[],
             }
-    id=0x20
     def parse(self, array: list[int]):
-        _id,timestamp,pressure,temperature,velocity=struct.unpack(">BxxxIfff",bytes(array))
-        self.raw_data["timestamp"].append(timestamp)
-        self.raw_data["pressure"].append(pressure)
-        self.raw_data["temperature"].append(temperature)
-        self.raw_data["velocity"].append(velocity)
+        for n in range(len(array)//20):
+            _id,timestamp,pressure,temperature,velocity=struct.unpack(">BxxxIfff",bytes(array[20*n:20*(n+1)]))
+            self.raw_data["timestamp"].append(timestamp)
+            self.raw_data["pressure"].append(pressure)
+            self.raw_data["temperature"].append(temperature)
+            self.raw_data["velocity"].append(velocity)
 
 class Tachometer(Sensor):
     raw_data={
             "timestamp":[],
             "rpm":[],
+            "pwr":[],
             }
-    id=0x30
     def parse(self, array: list[int]):
         for n in range(len(array)//12):
-            _id,timestamp,rpm=struct.unpack(">BxxxIf",bytes(array[12*n:12*(n+1)]))
+            _id,timestamp,rpm,pwr=struct.unpack(">BxxxIhh",bytes(array[12*n:12*(n+1)]))
             self.raw_data["timestamp"].append(timestamp)
             self.raw_data["rpm"].append(rpm)
+            self.raw_data["pwr"].append(pwr)
 
 class IMU(Sensor):
     raw_data={
             "timestamp":[],
             "quat":[]
             }
-    id=0x40
     def parse(self, array: list[int]):
         for n in range(len(array)//16):
             _id,timestamp,w,x,y,z=struct.unpack(">BxxxIhhhh",bytes(array[16*n:16*(n+1)]))
@@ -77,9 +74,45 @@ class Altimeter(Sensor):
             "timestamp":[],
             "alt":[],
             }
-    id=0x50
     def parse(self, array: list[int]):
         for n in range(len(array)//12):
             _id,timestamp,alt=struct.unpack(">BxxxIf",bytes(array[12*n:12*(n+1)]))
             self.raw_data["timestamp"].append(timestamp)
             self.raw_data["alt"].append(alt/100)
+
+class GPS(Sensor):
+    raw_data={
+            "timestamp":[],
+            "lat":[],
+            "lon":[]
+            }
+    def parse(self, array: list[int]):
+        for n in range(len(array)//16):
+            _id,timestamp,lat,lon=struct.unpack("BxxxIff",bytes(array[16*n:16*(n+1)]))
+            self.raw_data["timestamp"].append(timestamp)
+            self.raw_data["lat"].append(lat)
+            self.raw_data["lon"].append(lon)
+
+class Vane(Sensor):
+    raw_data={
+            "timestamp":[],
+            "angle":[]
+            }
+    def parse(self, array: list[int]):
+        for n in range(len(array)//12):
+            _id,timestamp,angle=struct.unpack(">BxxxIf",bytes(array[12*n:12*(n+1)]))
+            self.raw_data["timestamp"].append(timestamp)
+            self.raw_data["angle"].append(angle)
+
+class Barometer(Sensor):
+    raw_data={
+            "timestamp":[],
+            "pressure":[],
+            "temperature":[],
+            }
+    def parse(self, array: list[int]):
+        for n in range(len(array)//16):
+            _id,timestamp,pressure,temperature=struct.unpack("BxxxIff",bytes(array[16*n:16*(n+1)]))
+            self.raw_data["timestamp"].append(timestamp)
+            self.raw_data["pressure"].append(pressure)
+            self.raw_data["temperature"].append(temperature)

@@ -16,9 +16,4 @@ impl Data for AltData{
             altitude: BigEndian::read_f32(&data[8..12]),
         }
     }
-    fn draw(&self,ui:&mut eframe::egui::Ui) {
-        ui.label(format!("altitude:\t{}",self.altitude));
-        ui.add_space(10.0);
-        ui.label(format!("timestamp:\t{}ms",self.timestamp));
-    }
 }

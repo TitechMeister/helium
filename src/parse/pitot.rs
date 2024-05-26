@@ -20,9 +20,4 @@ impl Data for PitotData{
             velocity:BigEndian::read_f32(&data[16..20]),
         }
     }
-    fn draw(&self,ui:&mut eframe::egui::Ui) {
-        ui.heading(format!("velocity:\t{}m/s",self.velocity));
-        ui.add_space(10.0);
-        ui.label(format!("timestamp:\t{}ms",self.timestamp));
-    }
 }
