@@ -1,17 +1,30 @@
 use log::info;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use crate::parse::{decode_cobs, AltData, Data, IMUData, ServoData};
+use crate::parse::{decode_cobs, AltData, Data, IMUData, ServoData,PitotData};
+use std::fmt::Debug;
 
-use super::PitotData;
+
+
+fn parse_data<T>(data: &mut Vec<T>,decoded: &Vec<u8>)
+where T: Data+Debug+Copy+Clone{
+    for i in (0..decoded.len()).step_by(T::get_size()){
+        let item = T::parse(&decoded[i..i+T::get_size()].to_vec());
+        info!("{:?}",item);
+        data.push(item);
+    }
+    if data.len() > 100 {
+        *data = data[data.len()-100..].to_vec();
+    }
+}
 
 pub struct Parser {
     log: Vec<u8>,
     pub filename: String,
-    imu: [Vec<Box<IMUData>>;3],
-    servo_data: Vec<Box<ServoData>>,
-    alt_data: Vec<Box<AltData>>,
-    pitot_data:Vec<Box<PitotData>>,
+    imu: [Vec<IMUData>;3],
+    servo_data: Vec<ServoData>,
+    alt_data: Vec<AltData>,
+    pitot_data:Vec<PitotData>,
     port: Option<Box<dyn serialport::SerialPort>>,
 }
 
@@ -43,19 +56,19 @@ impl Parser {
         }
     }
 
-    pub fn get_imu(&self,id:u8) -> &Vec<Box<IMUData>> {
+    pub fn get_imu(&self,id:u8) -> &Vec<IMUData> {
         &self.imu[(id&0x0f) as usize]
     }
 
-    pub fn get_servo_data(&self) -> &Vec<Box<ServoData>> {
+    pub fn get_servo_data(&self) -> &Vec<ServoData> {
         &self.servo_data
     }
 
-    pub fn get_alt_data(&self) -> &Vec<Box<AltData>> {
+    pub fn get_alt_data(&self) -> &Vec<AltData> {
         &self.alt_data
     }
 
-    pub fn get_pitot_data(&self)->&Vec<Box<PitotData>>{
+    pub fn get_pitot_data(&self)->&Vec<PitotData>{
         &self.pitot_data
     }
 
@@ -81,38 +94,28 @@ impl Parser {
                     (decoded, rest) = decode_cobs(&self.log);
                     while decoded.len() > 0 {
                         log::info!("{:?}", decoded);
+                        let mut file = OpenOptions::new()
+                            .write(true)
+                            .append(true)
+                            .create(true)
+                            .open(format!("{}.txt", self.filename))
+                            .unwrap();
+                        let timestamp = chrono::Local::now().timestamp_millis();
+                        file.write_all(format!("{}:", timestamp).as_bytes()).unwrap();
+                        file.write_all(format!("{:?}",decoded).as_bytes()).unwrap();
+                        file.write_all("\n".as_bytes()).unwrap();
                         match decoded[0] & 0xF0 {
-                            0x40 => {
-                                for i in 0..(decoded.len() / 16){
-                                    self.imu[(decoded[0]&0x0F) as usize].push(Box::new(IMUData::parse(&decoded[i*16..(i+1)*16].to_vec())));
-                                }
-                                if self.imu[(decoded[0]&0x0F) as usize].len() > 100 {
-                                    self.imu[(decoded[0]&0x0F) as usize] = self.imu[(decoded[0]&0x0F) as usize][self.imu[(decoded[0]&0x0F) as usize].len()-100..].to_vec();
-                                }
-                            }
                             0x10 => {
-                                self.servo_data
-                                    .push(Box::new(ServoData::parse(&decoded.to_vec())));
-                                info!("{:?}", self.servo_data.last().unwrap());
-                                if self.servo_data.len() > 100 {
-                                    self.servo_data = self.servo_data[self.servo_data.len()-100..].to_vec();
-                                }
+                                parse_data(&mut self.servo_data,&decoded);
                             }
                             0x30 => {
-                                self.pitot_data
-                                    .push(Box::new(PitotData::parse(&decoded.to_vec())));
-                                info!("{:?}", self.pitot_data.last().unwrap());
-                                if self.pitot_data.len() > 100 {
-                                    self.pitot_data = self.pitot_data[self.pitot_data.len()-100..].to_vec();
-                                }
+                                parse_data(&mut self.pitot_data,&decoded);
+                            }
+                            0x40 => {
+                                parse_data(&mut self.imu[(decoded[0] & 0x0f) as usize], &decoded);
                             }
                             0x50 => {
-                                self.alt_data
-                                    .push(Box::new(AltData::parse(&decoded.to_vec())));
-                                info!("{:?}", self.alt_data.last().unwrap());
-                                if self.alt_data.len() > 100 {
-                                    self.alt_data = self.alt_data[self.alt_data.len()-100..].to_vec();
-                                }
+                                parse_data(&mut self.alt_data,&decoded);
                             }
                             _ => (),
                         }

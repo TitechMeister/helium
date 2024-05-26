@@ -28,4 +28,7 @@ impl Data for ServoData{
             status: data[32],
         }
     }
+    fn get_size() -> usize {
+        33
+    }
 }

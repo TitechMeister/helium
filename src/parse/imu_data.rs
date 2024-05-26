@@ -22,4 +22,7 @@ impl Data for IMUData{
             q_z: BigEndian::read_i16(&data[14..16]),
         }
     }
+    fn get_size() -> usize {
+        16
+    }
 }

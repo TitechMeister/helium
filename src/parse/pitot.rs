@@ -20,4 +20,7 @@ impl Data for PitotData{
             velocity:BigEndian::read_f32(&data[16..20]),
         }
     }
+    fn get_size() -> usize {
+        20
+    }
 }

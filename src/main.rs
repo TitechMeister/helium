@@ -2,15 +2,15 @@
 #![allow(rustdoc::missing_crate_level_docs)] // it's an example
 
 mod parse;
+mod ui;
 
 use eframe::{egui, egui::IconData};
-
-use egui_plot;
 
 use log::info;
 use serialport::available_ports;
 
 use crate::parse::Parser;
+use crate::ui::Drawable;
 use std::env;
 
 fn main() -> Result<(), eframe::Error> {
@@ -60,113 +60,15 @@ impl eframe::App for MeisterApp {
                     });
 
                     for i in 0..3 {
-                        if let Some(imu_data) = self.parser.get_imu(i as u8).last() {
-                            egui::Window::new(format!("IMU{:02x}", i))
-                                .vscroll(true)
-                                .show(ctx, |ui| {
-                                    ui.heading(format!(
-                                        "q_w:\t{:2.2}\tq_x:\t{:2.2}\tq_y:\t{:2.2}\tq_z:\t{:2.2}",
-                                        imu_data.q_w as f32 / 16384.0,
-                                        imu_data.q_x as f32 / 16384.0,
-                                        imu_data.q_y as f32 / 16384.0,
-                                        imu_data.q_z as f32 / 16384.0
-                                    ));
-                                    ui.add_space(10.0);
-                                    ui.label(format!("timestamp:\t{}ms", imu_data.timestamp));
-                                });
-                        }
+                        crate::parse::IMUData::draw(self.parser.get_imu(i as u8), ctx);
                     }
 
-                    if let Some(alt_data) = self.parser.get_alt_data().last() {
-                        egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
-                            ui.heading(format!(
-                                "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
-                                alt_data.altitude / 100.0,
-                                alt_data.timestamp
-                            ));
-                            let plt = egui_plot::Plot::new("Altitude");
-                            let point: egui_plot::PlotPoints = self
-                                .parser
-                                .get_alt_data()
-                                .iter()
-                                .enumerate()
-                                .map(|(n, data)| [n as f64, data.altitude as f64 / 100.0])
-                                .collect();
-                            let line = egui_plot::Line::new(point)
-                                .color(egui::Color32::from_rgb(0, 64, 255))
-                                .name("altitude");
-                            plt.show(ui, |plot_ui| {
-                                plot_ui.line(line);
-                            });
-                        });
-                    }
+                    crate::parse::AltData::draw(self.parser.get_alt_data(), ctx);
 
-                    if let Some(pitot_data) = self.parser.get_pitot_data().last() {
-                        egui::Window::new("Pitot").vscroll(true).show(ctx, |ui| {
-                            ui.heading(format!(
-                                "velocity:\t{:2.2}m/s\ttimestamp:\t{}ms",
-                                pitot_data.velocity, pitot_data.timestamp
-                            ));
-                            let plt = egui_plot::Plot::new("velocity");
-                            let point: egui_plot::PlotPoints = self
-                                .parser
-                                .get_pitot_data()
-                                .iter()
-                                .enumerate()
-                                .map(|(n, data)| [n as f64, data.velocity as f64])
-                                .collect();
-                            let line = egui_plot::Line::new(point)
-                                .color(egui::Color32::from_rgb(255, 0, 0))
-                                .name("velocity");
-                            plt.show(ui, |plot_ui| {
-                                plot_ui.line(line);
-                            });
-                        });
-                    }
+                    crate::parse::PitotData::draw(self.parser.get_pitot_data(), ctx);
 
-                    if let Some(servo_data) = self.parser.get_servo_data().last() {
-                        egui::Window::new("Servo").vscroll(true).show(ctx, |ui| {
-                            ui.add(
-                                eframe::egui::widgets::ProgressBar::new(servo_data.rudder / 40.0 + 0.5)
-                                    .text(format!("rudder:\t{:2.2}deg", servo_data.rudder)),
-                            );
-                            ui.add(
-                                eframe::egui::widgets::ProgressBar::new(servo_data.elevator / 40.0 + 0.5)
-                                    .text(format!("elevator:\t{:2.2}deg", servo_data.elevator)),
-                            );
-                            ui.add(
-                                eframe::egui::widgets::ProgressBar::new(servo_data.trim / 5.0 + 0.5)
-                                    .text(format!("trim:\t{:2.2}deg", servo_data.trim)),
-                            );
-                            ui.add_space(10.0);
-                            if servo_data.voltage != 0.0 {
-                                ui.add(
-                                    eframe::egui::widgets::ProgressBar::new(servo_data.voltage / 140.0)
-                                        .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 10.0)),
-                                );
-                            } else {
-                                ui.add(
-                                    eframe::egui::widgets::ProgressBar::new(0.0)
-                                        .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 10.0)),
-                                );
-                            }
-                            ui.add(
-                                eframe::egui::widgets::ProgressBar::new(
-                                    servo_data.current_rudder / 2000.0 + 0.5,
-                                )
-                                .text(format!("i_ruuder:\t{:4.2}mA", servo_data.current_rudder)),
-                            );
-                            ui.add(
-                                eframe::egui::widgets::ProgressBar::new(
-                                    servo_data.current_elevator / 2000.0 + 0.5,
-                                )
-                                .text(format!("i_elevator:\t{:4.2}mA", servo_data.current_elevator)),
-                            );
-                            ui.heading(format!("status:\t{}", servo_data.status));
-                            ui.add_space(10.0);
-                            ui.label(format!("timestamp:\t{}ms", servo_data.timestamp));
-                        });
-                    }
+                    crate::parse::ServoData::draw(self.parser.get_servo_data(), ctx);
+                    
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {

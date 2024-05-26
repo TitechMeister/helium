@@ -16,4 +16,7 @@ impl Data for AltData{
             altitude: BigEndian::read_f32(&data[8..12]),
         }
     }
+    fn get_size() -> usize {
+        12
+    }
 }
