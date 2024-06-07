@@ -87,8 +87,8 @@ class GPS(Sensor):
             "lon":[]
             }
     def parse(self, array: list[int]):
-        for n in range(len(array)//16):
-            _id,timestamp,lat,lon=struct.unpack("BxxxIff",bytes(array[16*n:16*(n+1)]))
+        for n in range(len(array)//24):
+            _id,timestamp,lat,lon=struct.unpack(">BxxxIdd",bytes(array[24*n:24*(n+1)]))
             self.raw_data["timestamp"].append(timestamp)
             self.raw_data["lat"].append(lat)
             self.raw_data["lon"].append(lon)
@@ -111,8 +111,8 @@ class Barometer(Sensor):
             "temperature":[],
             }
     def parse(self, array: list[int]):
-        for n in range(len(array)//16):
-            _id,timestamp,pressure,temperature=struct.unpack("BxxxIff",bytes(array[16*n:16*(n+1)]))
+        for n in range(len(array)//20):
+            _id,timestamp,pressure,temperature=struct.unpack(">BxxxIff",bytes(array[20*n:20*(n+1)]))
             self.raw_data["timestamp"].append(timestamp)
             self.raw_data["pressure"].append(pressure)
             self.raw_data["temperature"].append(temperature)

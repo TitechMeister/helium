@@ -1,15 +1,17 @@
 use log::info;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use crate::parse::{decode_cobs, AltData, Data, IMUData, ServoData,PitotData};
+use crate::parse::{decode_cobs, AltData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData};
 use std::fmt::Debug;
+
+use super::VaneData;
 
 
 
 fn parse_data<T>(data: &mut Vec<T>,decoded: &Vec<u8>)
 where T: Data+Debug+Copy+Clone{
-    for i in (0..decoded.len()).step_by(T::get_size()){
-        let item = T::parse(&decoded[i..i+T::get_size()].to_vec());
+    for i in 0..decoded.len()/T::get_size(){
+        let item = T::parse(&decoded[i*T::get_size()..(i+1)*T::get_size()].to_vec());
         info!("{:?}",item);
         data.push(item);
     }
@@ -21,10 +23,13 @@ where T: Data+Debug+Copy+Clone{
 pub struct Parser {
     log: Vec<u8>,
     pub filename: String,
+    gps_data: Vec<GPSData>,
     imu: [Vec<IMUData>;3],
     servo_data: Vec<ServoData>,
     alt_data: Vec<AltData>,
+    barometer_data: Vec<BarometerData>,
     pitot_data:Vec<PitotData>,
+    vane_data:Vec<VaneData>,
     port: Option<Box<dyn serialport::SerialPort>>,
 }
 
@@ -36,7 +41,10 @@ impl Parser {
             imu: [Vec::new(),Vec::new(),Vec::new()],
             servo_data: Vec::new(),
             alt_data: Vec::new(),
+            barometer_data: Vec::new(),
             pitot_data:Vec::new(),
+            gps_data: Vec::new(),
+            vane_data: Vec::new(),
             port: None,
         }
     }
@@ -68,8 +76,19 @@ impl Parser {
         &self.alt_data
     }
 
+    pub fn get_barometer_data(&self) -> &Vec<BarometerData> {
+        &self.barometer_data
+    }
+
     pub fn get_pitot_data(&self)->&Vec<PitotData>{
         &self.pitot_data
+    }
+    pub fn get_gps_data(&self) -> &Vec<GPSData> {
+        &self.gps_data
+    }
+
+    pub fn get_vane_data(&self) -> &Vec<VaneData>{
+        &self.vane_data
     }
 
     #[allow(unused_assignments)]
@@ -98,12 +117,10 @@ impl Parser {
                             .write(true)
                             .append(true)
                             .create(true)
-                            .open(format!("{}.txt", self.filename))
+                            .open(format!("{}-id{}.txt", self.filename,decoded[0]))
                             .unwrap();
                         let timestamp = chrono::Local::now().timestamp_millis();
-                        file.write_all(format!("{}:", timestamp).as_bytes()).unwrap();
-                        file.write_all(format!("{:?}",decoded).as_bytes()).unwrap();
-                        file.write_all("\n".as_bytes()).unwrap();
+                        file.write_all(format!("{}:{:?}\n", timestamp,decoded).as_bytes()).unwrap();
                         match decoded[0] & 0xF0 {
                             0x10 => {
                                 parse_data(&mut self.servo_data,&decoded);
@@ -116,6 +133,15 @@ impl Parser {
                             }
                             0x50 => {
                                 parse_data(&mut self.alt_data,&decoded);
+                            }
+                            0x60 => {
+                                parse_data(&mut self.gps_data,&decoded);
+                            }
+                            0x70 => {
+                                parse_data(&mut self.vane_data, &decoded);
+                            }
+                            0x90 => {
+                                parse_data(&mut self.barometer_data, &decoded);
                             }
                             _ => (),
                         }

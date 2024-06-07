@@ -15,7 +15,7 @@ impl Drawable<ServoData> for ServoData {
                         .text(format!("elevator:\t{:2.2}deg", servo_data.elevator)),
                 );
                 ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.trim / 5.0 + 0.5)
+                    eframe::egui::widgets::ProgressBar::new(servo_data.trim / 10.0 + 0.5)
                         .text(format!("trim:\t{:2.2}deg", servo_data.trim)),
                 );
                 ui.add_space(10.0);

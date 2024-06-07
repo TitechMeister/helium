@@ -68,6 +68,12 @@ impl eframe::App for MeisterApp {
                     crate::parse::PitotData::draw(self.parser.get_pitot_data(), ctx);
 
                     crate::parse::ServoData::draw(self.parser.get_servo_data(), ctx);
+
+                    crate::parse::GPSData::draw(self.parser.get_gps_data(), ctx);
+
+                    crate::parse::BarometerData::draw(self.parser.get_barometer_data(),ctx);
+
+                    crate::parse::VaneData::draw(self.parser.get_vane_data(),ctx);
                     
                 }
                 None => {
