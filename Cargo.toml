@@ -1,5 +1,5 @@
 [package]
-name = "logger-gui"
+name = "helium"
 version = "0.1.0"
 edition = "2021"
 
