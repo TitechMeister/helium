@@ -117,7 +117,7 @@ impl Parser {
                             .write(true)
                             .append(true)
                             .create(true)
-                            .open(format!("{}-id{}.txt", self.filename,decoded[0]))
+                            .open(format!("{}.txt", self.filename))
                             .unwrap();
                         let timestamp = chrono::Local::now().timestamp_millis();
                         file.write_all(format!("{}:{:?}\n", timestamp,decoded).as_bytes()).unwrap();
