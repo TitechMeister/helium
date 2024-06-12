@@ -8,7 +8,8 @@ pub struct IMUData{
     pub q_w: i16,
     pub q_x: i16,
     pub q_y: i16,
-    pub q_z: i16
+    pub q_z: i16,
+    pub calib : u16
 }
 
 impl Data for IMUData{
@@ -20,9 +21,10 @@ impl Data for IMUData{
             q_x: BigEndian::read_i16(&data[10..12]),
             q_y: BigEndian::read_i16(&data[12..14]),
             q_z: BigEndian::read_i16(&data[14..16]),
+            calib: BigEndian::read_u16(&data[16..20])
         }
     }
     fn get_size() -> usize {
-        16
+        20
     }
 }
