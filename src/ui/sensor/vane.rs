@@ -14,14 +14,14 @@ impl Drawable<VaneData> for VaneData {
                     ui.heading(format!("angle:\t{}", vane_data.angle));
                     ui.add_space(10.0);
                     ui.label(format!("timestamp:\t{}ms", vane_data.timestamp));
-                    let plt=egui_plot::Plot::new("angle");
+                    let plt=egui_plot::Plot::new("vane_angle").data_aspect(1.0);
                     let theta=(-vane_data.angle as f64/180.0+0.5)*PI;
                     let circle_points:PlotPoints=(0..512)
                     .map(|i|{
                         let theta=PI*(i as f64)/512.0;
                         [
-                            5.0*theta.cos(),
-                            5.0*theta.sin()
+                            theta.cos(),
+                            theta.sin()
                         ]
                     }).collect();
                     let circle_line=Line::new(circle_points)
@@ -31,7 +31,7 @@ impl Drawable<VaneData> for VaneData {
                         PlotPoints::new(
                             vec!(
                                 [0.0,0.0],
-                                [5.0*theta.cos(),5.0*theta.sin()]
+                                [theta.cos(),theta.sin()]
                             )
                         )
                     ).color(Color32::from_rgb(255, 0, 0));

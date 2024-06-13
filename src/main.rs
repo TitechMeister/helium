@@ -8,9 +8,11 @@ use eframe::{egui, egui::IconData};
 
 use log::info;
 use serialport::available_ports;
+use ui::app::imu::AppIMU;
+use ui::app::AppUI;
 
 use crate::parse::Parser;
-use crate::ui::Drawable;
+use crate::ui::sensor::Drawable;
 use std::env;
 
 fn main() -> Result<(), eframe::Error> {
@@ -32,6 +34,7 @@ fn main() -> Result<(), eframe::Error> {
 struct MeisterApp {
     port: String,
     parser: Parser,
+    app_imu: AppIMU
 }
 
 impl Default for MeisterApp {
@@ -39,6 +42,7 @@ impl Default for MeisterApp {
         Self {
             port: "".to_owned(),
             parser: Parser::new(),
+            app_imu: AppIMU::default()
         }
     }
 }
@@ -74,6 +78,8 @@ impl eframe::App for MeisterApp {
                     crate::parse::BarometerData::draw(self.parser.get_barometer_data(),ctx);
 
                     crate::parse::VaneData::draw(self.parser.get_vane_data(),ctx);
+
+                    self.app_imu.update(&self.parser, ctx);
                     
                 }
                 None => {
