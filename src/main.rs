@@ -34,7 +34,7 @@ fn main() -> Result<(), eframe::Error> {
 struct MeisterApp {
     port: String,
     parser: Parser,
-    app_imu: AppIMU
+    imu: [AppIMU;4]
 }
 
 impl Default for MeisterApp {
@@ -42,7 +42,7 @@ impl Default for MeisterApp {
         Self {
             port: "".to_owned(),
             parser: Parser::new(),
-            app_imu: AppIMU::default()
+            imu: [AppIMU::new(0x40),AppIMU::new(0x41),AppIMU::new(0x42),AppIMU::new(0x43)]
         }
     }
 }
@@ -63,9 +63,9 @@ impl eframe::App for MeisterApp {
                             .labelled_by(filename_label.id);
                     });
 
-                    for i in 0..3 {
-                        crate::parse::IMUData::draw(self.parser.get_imu(i as u8), ctx);
-                    }
+                    // for i in 0..3 {
+                    //     crate::parse::IMUData::draw(self.parser.get_imu(i as u8), ctx);
+                    // }
 
                     crate::parse::AltData::draw(self.parser.get_alt_data(), ctx);
 
@@ -79,7 +79,9 @@ impl eframe::App for MeisterApp {
 
                     crate::parse::VaneData::draw(self.parser.get_vane_data(),ctx);
 
-                    self.app_imu.update(&self.parser, ctx);
+                    for imu in &mut self.imu{
+                        imu.update(&self.parser, ctx);   
+                    }
                     
                 }
                 None => {
