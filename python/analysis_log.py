@@ -1,70 +1,42 @@
-from cobs import cobs_decode
-from sensor import Altimeter,IMU,Pitot,ServoController,Tachometer,GPS,Vane,Barometer
-from tqdm import tqdm
+from read_txt import read_log
 import pandas as pd
+from datetime import datetime,timezone,timedelta
 
-if __name__=="__main__":
-    with open("../log.bin","rb") as f:
-        data = f.read()
-    servo_controller = ServoController()
-    altimeter = Altimeter()
-    imu40 = IMU()
-    imu41 = IMU()
-    imu42 = IMU()
-    pitot = Pitot()
-    tachometer = Tachometer()
-    gps=GPS()
+if __name__=='__main__':
+    from sensor import ServoController,Vane
+    servo=ServoController()
+    servo_df=read_log('0608',16,servo)
+
     vane=Vane()
-    barometer=Barometer()
-    with tqdm(total=len(data)+1) as pbar:
-        while len(data)>0:
-            before = len(data)
-            dec, data = cobs_decode(data)
-            pbar.update(before-len(data))
-            if len(dec)==0: # Empty packet
-                continue
-            match dec[0] & 0xF0:
-                case 0x10:
-                    servo_controller.parse(dec)
-                case 0x20:
-                    tachometer.parse(dec)
-                case 0x30:
-                    pitot.parse(dec)
-                case 0x40:
-                    match dec[0]&0x0F:
-                        case 0x00:
-                            imu40.parse(dec)
-                        case 0x01:
-                            imu41.parse(dec)
-                        case 0x02:
-                            imu42.parse(dec)
-                case 0x50:
-                    altimeter.parse(dec)
-                case 0x60:
-                    gps.parse(dec)
-                case 0x70:
-                    vane.parse(dec)
-                case 0x90:
-                    barometer.parse(dec)
+    vane_df=read_log('0608',113,vane)
 
-    df_alt = pd.DataFrame(altimeter.raw_data)
-    df_imu40 = pd.DataFrame(imu40.raw_data)
-    df_imu41 = pd.DataFrame(imu41.raw_data)
-    df_imu42 = pd.DataFrame(imu42.raw_data)
-    df_pitot = pd.DataFrame(pitot.raw_data)
-    df_servo_controller = pd.DataFrame(servo_controller.raw_data)
-    df_tachometer = pd.DataFrame(tachometer.raw_data)
-    df_gps = pd.DataFrame(gps.raw_data)
-    df_vane = pd.DataFrame(vane.raw_data)
-    df_barometer = pd.DataFrame(barometer.raw_data)
-    
-    df_alt.to_csv("log/altimeter.csv")
-    df_imu40.to_csv("log/imu40.csv")
-    df_imu41.to_csv("log/imu41.csv")
-    df_imu42.to_csv("log/imu42.csv")
-    df_pitot.to_csv("log/pitot.csv")
-    df_servo_controller.to_csv("log/servo_controller.csv")
-    df_tachometer.to_csv("log/tachometer.csv")
-    df_gps.to_csv("log/gps.csv")
-    df_vane.to_csv("log/vane.csv")
-    df_barometer.to_csv("log/barometer.csv")
+    # 2024/06/08 4:51 から3分間で取得したデータを切り出す。
+    JST = timezone(timedelta(hours=+9))
+    start=datetime(2024,6,8,6,54,00,tzinfo=JST)
+    end=  start + timedelta(seconds=180)
+    servo_df_5th=servo_df[(servo_df['jst']>start)&(servo_df['jst']<end)]
+    vane_df_5th=vane_df[(vane_df['jst']>start)&(vane_df['jst']<end)]
+
+    from matplotlib import pyplot as plt,gridspec
+
+    fig=plt.figure()
+    gs=gridspec.GridSpec(3,1)
+    ax11 = plt.subplot(gs[:2])
+    ax11.set_ylim(-20,20)
+    ax12= ax11.twinx()
+    ax2 = plt.subplot(gs[2:],sharex=ax11)
+
+    ax11.plot(servo_df_5th['jst'],servo_df_5th['rudder'],color='red',label="rudder")
+    ax12.plot(servo_df_5th['jst'],servo_df_5th['elevator'],color='blue',label="elevator")
+    plt.setp(ax11.get_xticklabels(), visible=False)
+    ax11.set_ylabel('rudder (deg)',color='red')
+    ax12.set_ylabel('elevator (deg)',color='blue')
+    ax11.tick_params('y',colors='red')
+    ax12.tick_params('y',colors='blue')
+
+    ax2.plot(vane_df_5th['jst'],vane_df_5th['angle'],label=r'$\beta$')
+    ax2.set_ylabel(r'$\beta$ (deg)')
+    ax2.legend()
+
+    fig.subplots_adjust(hspace=0.0)
+    plt.show()
