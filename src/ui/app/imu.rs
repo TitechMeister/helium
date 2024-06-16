@@ -1,4 +1,4 @@
-use std::f64::consts::PI;
+use std::f64::consts::{FRAC_PI_2, PI};
 
 use eframe::egui;
 use egui_plot;
@@ -68,6 +68,11 @@ impl super::AppUI for AppIMU {
                             if ui.button("detect x axis").clicked() {
                                 let rotq = self.q0.conjugate() * q_raw;
                                 let psi0 = rotq.j.atan2(rotq.i);
+                                self.q1 = Quaternion::exp(&Quaternion::new(0.0, 0.0, 0.0, -psi0/2.0));
+                            }
+                            if ui.button("detect y axis").clicked() {
+                                let rotq = self.q0.conjugate() * q_raw;
+                                let psi0 = rotq.j.atan2(rotq.i)+FRAC_PI_2;
                                 self.q1 = Quaternion::exp(&Quaternion::new(0.0, 0.0, 0.0, -psi0/2.0));
                             }
                             ui.checkbox(&mut self.invert, "invert");
