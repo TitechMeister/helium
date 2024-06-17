@@ -13,6 +13,7 @@ def read_log(date:str,id:int,sensor:Sensor):
     df['utc']=utc
     JST = timezone(timedelta(hours=+9))
     df['jst']=[datetime.fromtimestamp(t/1000.0,timezone.utc).astimezone(JST) for t in utc]
+    df=df.drop('timestamp',axis=1)
     return df
 
 if __name__=='__main__':
