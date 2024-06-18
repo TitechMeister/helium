@@ -7,13 +7,15 @@ def read_log(date:str,id:int,sensor:Sensor):
         lines=f.readlines()
     utc=[]
     for l in lines:
-        utc.append(int(l[:13]))
-        sensor.parse([int(s) for s in l[15:-2].split(',')])
+        utc0=int(l[:13])
+        n=sensor.parse([int(s) for s in l[15:-2].split(',')])
+        for i in range(n,0,-1):
+            utc.append(utc0-(sensor.database[f'timestamp_{sensor.id:02x}'][-1]-sensor.database[f'timestamp_{sensor.id:02x}'][-i]))
+    print(f'sensor{sensor.ID:02x} : {len(utc)} items')
     df=pd.DataFrame(sensor.database)
     df['utc']=utc
     JST = timezone(timedelta(hours=+9))
     df['jst']=[datetime.fromtimestamp(t/1000.0,timezone.utc).astimezone(JST) for t in utc]
-    df=df.drop('timestamp',axis=1)
     return df
 
 if __name__=='__main__':
