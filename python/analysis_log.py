@@ -7,13 +7,13 @@ import numpy as np
 
 if __name__=='__main__':
     from sensor import ServoController,Vane,Altimeter,Pitot,Tachometer,GPS,Barometer,IMU
-    df=read_log('0608',16,ServoController())
+    df=read_log('0619',0x40,IMU(0x40))
     # df=pd.merge(df,read_log('0608',0x71,Vane(0x71)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x52,Altimeter(0x52)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x21,Tachometer(0x31)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x31,Pitot(0x21)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x90,Barometer(0x90)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log('0608',0x06,GPS(0x06)),how='outer',on=['utc','jst'])
+    # df=pd.merge(df,read_log('0608',0x06,GPS(0x06)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x40,IMU(0x40)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x41,IMU(0x41)),how='outer',on=['utc','jst'])
     # df=pd.merge(df,read_log('0608',0x42,IMU(0x42)),how='outer',on=['utc','jst'])
@@ -21,13 +21,13 @@ if __name__=='__main__':
 
 
     # 2024/06/08 4:52.587000 から3分間で取得したデータを切り出す。
-    JST = timezone(timedelta(hours=+9))
-    start=datetime(2024,6,8,4,52,1,tzinfo=JST)-timedelta(seconds=24)
-    end=  start + timedelta(seconds=120)
+    # JST = timezone(timedelta(hours=+9))
+    # start=datetime(2024,6,8,4,52,1,tzinfo=JST)-timedelta(seconds=24)
+    # end=  start + timedelta(seconds=120)
 
-    df=df[(df['jst']>=start)&(df['jst']<=end)]
-    # df=df.sort_values('utc')
-    # df=df.interpolate()
+    # df=df[(df['jst']>=start)&(df['jst']<=end)]
+    df=df.sort_values('utc')
+    df=df.interpolate()
     # df.to_csv('df.csv')
 
     fig=plt.figure()
@@ -37,11 +37,11 @@ if __name__=='__main__':
     z,x,y=14,14541,6434
     # url=f"{https://tile.openstreetmap.org/{z}/{x}/{y}.png}" # OpenStreatMap
     # url=f"{http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png}" # 国土地理院
-    im=np.asarray(Image.open(f'../assets/map/{z}-{x}-{y}.png'))
-    ax0.imshow(im,cmap='gray')
+    # im=np.asarray(Image.open(f'../assets/map/{z}-{x}-{y}.png'))
+    # ax0.imshow(im,cmap='gray')
     # df['x']=int((2.0**(z+7.0))*(df['lon_06']/180.0+1))%256
     # df['y']= int((2.0**(z+7.0))/np.pi*(-np.arctanh(np.sin(np.radians(df['lat_06']))) + np.arctanh(np.sin(np.radians(85.05112878)))))%256
-    ax0.plot(df['x_06'],df['y_06'],'o',color='red')
+    ax0.plot(df['jst'],df['timestamp_40'],'o',color='red')
 
     # ax11 = plt.subplot(gs[1])
     # ax11.set_ylim(-20,20)

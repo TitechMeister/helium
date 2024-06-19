@@ -104,15 +104,15 @@ class IMU(Sensor):
             f"z_{self.id:02x}":[]
         }
     def parse(self, array: list[int]):
-        for n in range(len(array)//16):
-            _id,timestamp,w,x,y,z=struct.unpack(">BxxxIhhhh",bytes(array[16*n:16*(n+1)]))
+        for n in range(len(array)//20):
+            _,timestamp,w,x,y,z=struct.unpack(">BxxxIhhhhxxxx",bytes(array[20*n:20*(n+1)]))
             w,x,y,z = w/16384.0,x/16384.0,y/16384.0,z/16384.0
             self.raw_data[f"timestamp_{self.id:02x}"].append(timestamp)
             self.raw_data[f"w_{self.id:02x}"].append(w)
             self.raw_data[f"x_{self.id:02x}"].append(x)
             self.raw_data[f"y_{self.id:02x}"].append(y)
             self.raw_data[f"z_{self.id:02x}"].append(z)
-        return len(array)//16
+        return len(array)//20
     @property
     def database(self)->dict[str,list]:
         return self.raw_data
