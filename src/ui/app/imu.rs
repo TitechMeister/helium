@@ -8,23 +8,13 @@ pub struct AppIMU {
     id:u8,
     q0: Quaternion<f64>,
     q1:Quaternion<f64>,
+    psi0:f64,
     invert: bool
 }
 
 impl AppIMU{
     pub fn new(id:u8)->Self{
-        Self { id: id, q0: Quaternion::identity(), q1: Quaternion::identity(), invert: false }
-    }
-}
-
-impl Default for AppIMU {
-    fn default() -> Self {
-        Self {
-            id: 0u8,
-            q0: Quaternion::new(1.0, 0.0, 0.0, 0.0),
-            q1: Quaternion::new(1.0, 0.0, 0.0, 0.0),
-            invert:false
-        }
+        Self { id: id, q0: Quaternion::identity(), q1: Quaternion::identity(),psi0:0.0, invert: false }
     }
 }
 
@@ -66,15 +56,18 @@ impl super::AppUI for AppIMU {
                                 self.q1 = Quaternion::identity();
                             }
                             if ui.button("detect x axis").clicked() {
-                                let rotq = self.q0.conjugate() * q_raw;
-                                let psi0 = rotq.j.atan2(rotq.i);
+                                let rotq = q_raw * self.q0.conjugate();
+                                let psi0 = -rotq.j.atan2(rotq.i);
+                                self.psi0=psi0;
                                 self.q1 = Quaternion::exp(&Quaternion::new(0.0, 0.0, 0.0, -psi0/2.0));
                             }
                             if ui.button("detect y axis").clicked() {
-                                let rotq = self.q0.conjugate() * q_raw;
-                                let psi0 = rotq.j.atan2(rotq.i)+FRAC_PI_2;
+                                let rotq = q_raw * self.q0.conjugate();
+                                let psi0 = -rotq.j.atan2(rotq.i)+FRAC_PI_2;
+                                self.psi0=psi0;
                                 self.q1 = Quaternion::exp(&Quaternion::new(0.0, 0.0, 0.0, -psi0/2.0));
                             }
+                            ui.label(format!("psi0:{}",self.psi0.to_degrees()));
                             ui.checkbox(&mut self.invert, "invert");
                             ui.add_space(10.0);
                             let q_c=q_raw.conjugate()*q; // correction quaternion
