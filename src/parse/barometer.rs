@@ -2,6 +2,7 @@ use crate::parse::Data;
 use byteorder::{BigEndian, ByteOrder};
 
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct BarometerData{
     pub id: u8,

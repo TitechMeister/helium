@@ -32,3 +32,28 @@ pub fn decode_cobs(data: &Vec<u8>) -> (Vec<u8>,Vec<u8>) {
     }
     (out,data[enc_idx+1..].to_vec())
 }
+
+#[allow(dead_code)]
+pub fn encode_cobs(data:&Vec<u8>)->Vec<u8>{
+    let mut enc_data=vec![0];
+    let mut enc_idx=0;
+    let mut code_idx=0;
+    for d in data{
+        if *d==0{
+            enc_data[enc_idx]=code_idx+1;
+            enc_data.push(0);
+            enc_idx+=1;
+            code_idx=0;
+        }else{
+            enc_data.push(*d);
+            if code_idx==0xff{
+                enc_data[enc_idx]=code_idx;
+                enc_data.push(0);
+                enc_idx+=1;
+            }
+        }
+    }
+    enc_data[enc_idx]=code_idx+1;
+    enc_data.push(0);
+    enc_data
+}

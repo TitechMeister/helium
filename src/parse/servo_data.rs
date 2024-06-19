@@ -1,6 +1,7 @@
 use byteorder::{ByteOrder, BigEndian};
 use crate::parse::Data;
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct ServoData{
     pub id: u8,

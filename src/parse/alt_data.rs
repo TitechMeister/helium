@@ -1,6 +1,7 @@
 use crate::parse::Data;
 use byteorder::{BigEndian, ByteOrder};
 
+#[allow(dead_code)]
 #[derive(Debug, Clone, Copy)]
 pub struct AltData{
     pub id: u8,
