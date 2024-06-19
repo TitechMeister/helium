@@ -35,6 +35,7 @@ pub struct Parser {
 
 impl Parser {
     pub fn new() -> Self {
+        std::fs::create_dir_all(format!("log/{}",chrono::Local::now().format("%m%d"))).unwrap();
         Self {
             log: Vec::new(),
             filename : "log.bin".to_owned(),
@@ -100,13 +101,11 @@ impl Parser {
         match self.port {
             Some(ref mut port) => match port.read(serial_buf.as_mut_slice()) {
                 Ok(n) => {
-                    log::info!("recv:{:?}", &serial_buf[..n]);
-
                     let mut file = OpenOptions::new()
                         .write(true)
                         .append(true)
                         .create(true)
-                        .open(&self.filename)
+                        .open(&format!("log/{}/{}",chrono::Local::now().format("%m%d"),self.filename))
                         .unwrap();
                     file.write_all(&serial_buf[..n]).unwrap();
 
@@ -120,9 +119,9 @@ impl Parser {
                             .write(true)
                             .append(true)
                             .create(true)
-                            .open(format!("{}.txt", self.filename))
+                            .open(format!("log/{}/{}-id{}.txt",chrono::Local::now().format("%m%d"), self.filename,&decoded[0]))
                             .unwrap();
-                        let timestamp = chrono::Local::now().timestamp_millis();
+                        let timestamp = chrono::Utc::now().timestamp_millis();
                         file.write_all(format!("{}:{:?}\n", timestamp,decoded).as_bytes()).unwrap();
                         match decoded[0] & 0xF0 {
                             0x10 => {

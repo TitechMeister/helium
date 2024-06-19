@@ -4,3 +4,4 @@ __pycache__/
 log.bin
 log.bin.txt
 python/log
+log/
