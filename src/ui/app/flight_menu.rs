@@ -47,11 +47,10 @@ impl super::AppUI for FlightMenu {
                     }
                     ui.checkbox(&mut self.customize, "custom");
                 });
-                ui.add_space(0.0);
                 ui.horizontal(|ui|{
                     let mut p=ui.max_rect().max;
-                    p.x/=2.0;
-                    if ui.put(egui::Rect::from_min_max(egui::Pos2 { x: ui.min_rect().min.x, y: ui.max_rect().max.y }, p), egui::Button::new("Prev")).clicked() && self.cnt>1{
+                    p.x=(p.x+ui.min_rect().min.x)/2.0;
+                    if ui.put(egui::Rect::from_min_max(egui::Pos2 { x: ui.min_rect().min.x, y: ui.max_rect().max.y}, p), egui::Button::new("Prev")).clicked() && self.cnt>1{
                         self.cnt-=1
                     }
                     if ui.put(egui::Rect::from_min_max( p,ui.max_rect().max), egui::Button::new("Next")).clicked(){
