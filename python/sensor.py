@@ -14,9 +14,9 @@ class Sensor(metaclass=ABCMeta):
         raise NotImplementedError
 
 class ServoController(Sensor):
-    def __init__(self) -> None:
+    def __init__(self,_id:int=0x10) -> None:
         super().__init__()
-        self.id=0x10
+        self.id=_id
         self.raw_data={
             f"timestamp_{self.id:02x}" :[],
             f"rudder_{self.id:02x}"    :[],

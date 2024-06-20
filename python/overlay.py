@@ -9,21 +9,21 @@ import os
 
 if __name__=='__main__':
 
-    target='target.mp4'
+    target='log/video/target.mp4'
     date='0608'
     JST = timezone(timedelta(hours=+9))
-    start=datetime(2024,6,8,5,6,14,tzinfo=JST)-timedelta(seconds=24)
+    start=datetime(2024,6,8,5,20,12,400000,tzinfo=JST)-timedelta(seconds=17.75)
 
     MAP_ZOOM,MAP_X,MAP_Y=14,14541,6434
 
     from sensor import ServoController,Vane,Altimeter,Pitot,Tachometer,GPS,Barometer
-    df=read_log(date,0x10,ServoController())
-    df=pd.merge(df,read_log(date,0x71,Vane(0x71)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,0x52,Altimeter(0x52)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,0x21,Tachometer(0x31)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,0x31,Pitot(0x21)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,0x90,Barometer(0x90)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,0x06,GPS(0x06)),how='outer',on=['utc','jst'])
+    df=read_log(date,ServoController())
+    df=pd.merge(df,read_log(date,Vane(0x71)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Altimeter(0x52)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Tachometer(0x31)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Pitot(0x21)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Barometer(0x90)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,GPS(0x06)),how='outer',on=['utc','jst'])
 
     movie=cv2.VideoCapture(target)
     fps=movie.get(cv2.CAP_PROP_FPS)
@@ -36,8 +36,7 @@ if __name__=='__main__':
     df=df.interpolate()
 
 
-    print(f"start={df['jst'].iloc[0]}")
-    print(f"end={df['jst'].iloc[-1]}")
+    print(f"    {start}    >>>    {start+timedelta(seconds=cnt/fps)} ")
     codec=cv2.VideoWriter.fourcc(*'mp4v')
     video= cv2.VideoWriter('tmp1.mp4', codec, fps, (width+400, height))
 
@@ -57,13 +56,15 @@ if __name__=='__main__':
     
     image = np.zeros( (height, width+400,3), dtype=np.uint8 )
     
-    # url=f"{https://tile.openstreetmap.org/{z}/{x}/{y}.png}" # OpenStreatMap
-    # url=f"{http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png}" # 国土地理院
+    # url=f"https://tile.openstreetmap.org/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # OpenStreatMap
+    url=f"http://cyberjapandata.gsi.go.jp/xyz/std/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # 国土地理院
     map_img = cv2.imread(f'../assets/map/{MAP_ZOOM}-{MAP_X}-{MAP_Y}.png')
 
     for t in tqdm(range(cnt)):
         image[:,:,:]=32
-        _,cap=movie.read()
+        rest,cap=movie.read()
+        if not rest:
+            break
         image[:height,:width,:]=cap
         _df=df[df['jst']<=start+timedelta(seconds=t/fps)]
         for k,key in enumerate(data):

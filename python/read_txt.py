@@ -2,8 +2,8 @@ from sensor import Sensor
 import pandas as pd
 from datetime import datetime,timezone,timedelta
 
-def read_log(date:str,id:int,sensor:Sensor):
-    with open(f'log/{date}/log.bin-id{id}.txt') as f:
+def read_log(date:str,sensor:Sensor):
+    with open(f'log/{date}/log.bin-id{sensor.ID}.txt') as f:
         lines=f.readlines()
     utc=[]
     for l in lines:
