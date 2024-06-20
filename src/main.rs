@@ -4,10 +4,11 @@
 mod parse;
 mod ui;
 
-use eframe::{egui, egui::IconData};
+use eframe::egui::{self, FontData, FontDefinitions, FontFamily, IconData};
 
 use log::info;
 use serialport::available_ports;
+use ui::app::flight_menu::FlightMenu;
 use ui::app::imu::AppIMU;
 use ui::app::AppUI;
 
@@ -34,7 +35,8 @@ fn main() -> Result<(), eframe::Error> {
 struct MeisterApp {
     port: String,
     parser: Parser,
-    imu: [AppIMU;4]
+    imu: [AppIMU; 4],
+    menu: FlightMenu,
 }
 
 impl Default for MeisterApp {
@@ -42,17 +44,40 @@ impl Default for MeisterApp {
         Self {
             port: "".to_owned(),
             parser: Parser::new(),
-            imu: [AppIMU::new(0x40),AppIMU::new(0x41),AppIMU::new(0x42),AppIMU::new(0x43)]
+            imu: [
+                AppIMU::new(0x40),
+                AppIMU::new(0x41),
+                AppIMU::new(0x42),
+                AppIMU::new(0x43),
+            ],
+            menu: FlightMenu::new(),
         }
     }
 }
 
 impl eframe::App for MeisterApp {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut fonts = FontDefinitions::default();
+        fonts.font_data.insert(
+            "NotoSansJP-Regular".to_owned(),
+            FontData::from_static(include_bytes!("../assets/fonts/NotoSansJP-Regular.ttf")),
+        );
+        fonts
+            .families
+            .get_mut(&FontFamily::Proportional)
+            .unwrap()
+            .insert(0, "NotoSansJP-Regular".to_owned());
+
+        // Put my font as last fallback for monospace:
+        fonts
+            .families
+            .get_mut(&FontFamily::Monospace)
+            .unwrap()
+            .push("NotoSansJP-Regular".to_owned());
+        ctx.set_fonts(fonts);
         self.parser.parse();
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.request_repaint_after(std::time::Duration::from_millis(25));
-
             match self.parser.get_port() {
                 Some(_) => {
                     ui.label(format!("Connected to port: {}", self.port));
@@ -75,14 +100,15 @@ impl eframe::App for MeisterApp {
 
                     crate::parse::GPSData::draw(self.parser.get_gps_data(), ctx);
 
-                    crate::parse::BarometerData::draw(self.parser.get_barometer_data(),ctx);
+                    crate::parse::BarometerData::draw(self.parser.get_barometer_data(), ctx);
 
-                    crate::parse::VaneData::draw(self.parser.get_vane_data(),ctx);
+                    crate::parse::VaneData::draw(self.parser.get_vane_data(), ctx);
 
-                    for imu in &mut self.imu{
-                        imu.update(&self.parser, ctx);   
+                    for imu in &mut self.imu {
+                        imu.update(&self.parser, ctx);
                     }
-                    
+
+                    self.menu.update(&self.parser, ctx);
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {
@@ -125,7 +151,7 @@ impl eframe::App for MeisterApp {
 
 pub(crate) fn load_icon() -> IconData {
     let (icon_rgba, icon_width, icon_height) = {
-        let icon = include_bytes!("../assets/logo.png");
+        let icon = include_bytes!("../assets/logo/logo.png");
         let image = image::load_from_memory(icon)
             .expect("Failed to open icon path")
             .into_rgba8();
