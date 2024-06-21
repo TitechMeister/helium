@@ -20,8 +20,8 @@ if __name__=='__main__':
     df=read_log(date,ServoController())
     df=pd.merge(df,read_log(date,Vane(0x71)),how='outer',on=['utc','jst'])
     df=pd.merge(df,read_log(date,Altimeter(0x52)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,Tachometer(0x31)),how='outer',on=['utc','jst'])
-    df=pd.merge(df,read_log(date,Pitot(0x21)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Tachometer(0x21)),how='outer',on=['utc','jst'])
+    df=pd.merge(df,read_log(date,Pitot(0x31)),how='outer',on=['utc','jst'])
     df=pd.merge(df,read_log(date,Barometer(0x90)),how='outer',on=['utc','jst'])
     df=pd.merge(df,read_log(date,GPS(0x06)),how='outer',on=['utc','jst'])
 
@@ -44,7 +44,7 @@ if __name__=='__main__':
         'rudder_10':0.0,
         'elevator_10':0.0,
         'trim_10':0.0,
-        'cadence_31':0.0,
+        'cadence_21':0.0,
         'alt_52':0.0,
         'lat_06':0.0,
         'lon_06':0.0,
@@ -56,8 +56,9 @@ if __name__=='__main__':
     
     image = np.zeros( (height, width+400,3), dtype=np.uint8 )
     
-    # url=f"https://tile.openstreetmap.org/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # OpenStreatMap
-    url=f"http://cyberjapandata.gsi.go.jp/xyz/std/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # 国土地理院
+    url=f"https://tile.openstreetmap.org/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # OpenStreatMap
+    # url=f"http://cyberjapandata.gsi.go.jp/xyz/std/{MAP_ZOOM}/{MAP_X}/{MAP_Y}.png" # 国土地理院
+    print(url)
     map_img = cv2.imread(f'../assets/map/{MAP_ZOOM}-{MAP_X}-{MAP_Y}.png')
 
     for t in tqdm(range(cnt)):
@@ -78,6 +79,11 @@ if __name__=='__main__':
                     color = (255, 255, 255), 
                     thickness = 1, 
             )
+        x,y=int((2.0**(MAP_ZOOM+7.0))*(data['lon_06']/180.0+1))//256,int((2.0**(MAP_ZOOM+7.0))/np.pi*(-np.arctanh(np.sin(np.radians(data['lat_06']))) + np.arctanh(np.sin(np.radians(85.05112878)))))//256
+        if (x!=MAP_X) or (y!=MAP_Y):
+            MAP_X=x
+            MAP_Y=y
+            map_img=cv2.imread(f'../assets/map/{MAP_ZOOM}-{MAP_X}-{MAP_Y}.png')
         cv2.circle(map_img, 
                    (
                         int((2.0**(MAP_ZOOM+7.0))*(data['lon_06']/180.0+1))%256,
