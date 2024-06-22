@@ -9,7 +9,7 @@ import os
 
 if __name__=='__main__':
 
-    target='log/video/target.mp4'
+    target='log/video/6thTF_6thFlight.mp4'
     date='0608'
     JST = timezone(timedelta(hours=+9))
     start=datetime(2024,6,8,5,20,12,400000,tzinfo=JST)-timedelta(seconds=17.75)
@@ -79,7 +79,8 @@ if __name__=='__main__':
                     color = (255, 255, 255), 
                     thickness = 1, 
             )
-        x,y=int((2.0**(MAP_ZOOM+7.0))*(data['lon_06']/180.0+1))//256,int((2.0**(MAP_ZOOM+7.0))/np.pi*(-np.arctanh(np.sin(np.radians(data['lat_06']))) + np.arctanh(np.sin(np.radians(85.05112878)))))//256
+        x=int((2.0**(MAP_ZOOM+7.0))*(data['lon_06']/180.0+1))//256
+        y=int((2.0**(MAP_ZOOM+7.0))/np.pi*(-np.arctanh(np.sin(np.radians(data['lat_06']))) + np.arctanh(np.sin(np.radians(85.05112878)))))//256
         if (x!=MAP_X) or (y!=MAP_Y):
             MAP_X=x
             MAP_Y=y

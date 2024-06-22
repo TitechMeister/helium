@@ -69,7 +69,7 @@ impl super::AppUI for AppIMU {
             egui::Window::new(format!("IMU:{:02x}", self.id))
                 .vscroll(true)
                 .show(ctx, |ui| {
-                    egui::SidePanel::left("imu_l_panel")
+                    egui::SidePanel::left(format!("imu_l_panel{}",self.id))
                         .resizable(true)
                         .default_width(250.0)
                         .show_inside(ui, |ui| {

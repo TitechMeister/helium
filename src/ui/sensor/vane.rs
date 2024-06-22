@@ -18,7 +18,7 @@ impl Drawable<VaneData> for VaneData {
                     let theta=(-vane_data.angle as f64/180.0+0.5)*PI;
                     let circle_points:PlotPoints=(0..512)
                     .map(|i|{
-                        let theta=PI*(i as f64)/512.0;
+                        let theta=2.0*PI*(i as f64)/512.0;
                         [
                             theta.cos(),
                             theta.sin()
