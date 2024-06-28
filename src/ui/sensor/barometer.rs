@@ -1,6 +1,6 @@
+use super::Drawable;
 use crate::parse::BarometerData;
 use eframe::egui;
-use super::Drawable;
 
 impl Drawable<BarometerData> for BarometerData {
     fn draw(data: &Vec<BarometerData>, ctx: &egui::Context) {
@@ -8,10 +8,11 @@ impl Drawable<BarometerData> for BarometerData {
             egui::Window::new("Pressure").vscroll(true).show(ctx, |ui| {
                 ui.heading(format!(
                     "pressure:\t{:2.2}Pa\ttimestamp:\t{}ms",
-                    alt_data.pressure,
-                    alt_data.timestamp
+                    alt_data.pressure, alt_data.timestamp
                 ));
-                let plt = egui_plot::Plot::new("Pressure");
+                let plt = egui_plot::Plot::new("Pressure")
+                    .allow_zoom(false)
+                    .allow_scroll(false);
                 let point: egui_plot::PlotPoints = data
                     .iter()
                     .enumerate()

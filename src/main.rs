@@ -10,6 +10,7 @@ use log::info;
 use serialport::available_ports;
 use ui::app::flight_menu::FlightMenu;
 use ui::app::imu::AppIMU;
+use ui::app::gps::Gps;
 use ui::app::AppUI;
 
 use crate::parse::Parser;
@@ -37,6 +38,7 @@ struct MeisterApp {
     parser: Parser,
     imu: [AppIMU; 4],
     menu: FlightMenu,
+    gps: Gps,
 }
 
 impl Default for MeisterApp {
@@ -51,6 +53,7 @@ impl Default for MeisterApp {
                 AppIMU::new(0x43),
             ],
             menu: FlightMenu::new(),
+            gps: Gps::new(),
         }
     }
 }
@@ -109,6 +112,8 @@ impl eframe::App for MeisterApp {
                     }
 
                     self.menu.update(&self.parser, ctx);
+
+                    self.gps.update(&self.parser, ctx);
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {

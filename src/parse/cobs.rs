@@ -35,25 +35,42 @@ pub fn decode_cobs(data: &Vec<u8>) -> (Vec<u8>,Vec<u8>) {
 
 #[allow(dead_code)]
 pub fn encode_cobs(data:&Vec<u8>)->Vec<u8>{
-    let mut enc_data=vec![0];
-    let mut enc_idx=0;
-    let mut code_idx=0;
+    let mut enc_data=vec![];
+    let mut buf=[0u8;256];
+    let mut buf_idx=0;
     for d in data{
         if *d==0{
-            enc_data[enc_idx]=code_idx+1;
-            enc_data.push(0);
-            enc_idx+=1;
-            code_idx=0;
-        }else{
-            enc_data.push(*d);
-            if code_idx==0xff{
-                enc_data[enc_idx]=code_idx;
-                enc_data.push(0);
-                enc_idx+=1;
+            enc_data.push(buf_idx as u8+1);
+            for b in &buf[0..buf_idx]{
+                enc_data.push(*b);
             }
+            buf_idx=0;
+        }else{
+            buf[buf_idx]=*d;
+            buf_idx+=1;
         }
     }
-    enc_data[enc_idx]=code_idx+1;
+    enc_data.push(buf_idx as u8+1);
+    for b in &buf[0..buf_idx]{
+        enc_data.push(*b);
+    }
     enc_data.push(0);
     enc_data
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_cobs(){
+        let data=vec![
+            0x00,0x00,0x01,0x02,0x33
+        ];
+        let enc_data=encode_cobs(&data);
+        println!();
+        let (dec_data,rest)=decode_cobs(&enc_data);
+        assert_eq!(data,dec_data);
+        assert_eq!(rest.len(),0);
+    }
 }

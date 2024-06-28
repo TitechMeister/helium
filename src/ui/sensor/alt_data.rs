@@ -11,7 +11,9 @@ impl Drawable<AltData> for AltData {
                     alt_data.altitude / 100.0,
                     alt_data.timestamp
                 ));
-                let plt = egui_plot::Plot::new("Altitude");
+                let plt = egui_plot::Plot::new("Altitude")
+                    .allow_zoom(false)
+                    .allow_scroll(false);
                 let point: egui_plot::PlotPoints = data
                     .iter()
                     .enumerate()

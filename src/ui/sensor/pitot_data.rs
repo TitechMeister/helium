@@ -10,7 +10,9 @@ impl Drawable<PitotData> for PitotData {
                     "velocity:\t{:2.2}m/s\ttimestamp:\t{}ms",
                     pitot_data.velocity, pitot_data.timestamp
                 ));
-                let plt = egui_plot::Plot::new("velocity");
+                let plt = egui_plot::Plot::new("velocity")
+                    .allow_zoom(false)
+                    .allow_scroll(false);
                 let point: egui_plot::PlotPoints = data
                     .iter()
                     .enumerate()

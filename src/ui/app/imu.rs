@@ -1,7 +1,7 @@
-use std::f64::consts::{FRAC_PI_2, PI};
+use std::f64::consts::FRAC_PI_2;
 
-use eframe::egui;
-use egui_plot;
+use eframe::egui::{self, Sense};
+use eframe::egui::epaint::{Vec2,Stroke,Color32};
 use nalgebra::Quaternion;
 
 use std::fs::OpenOptions;
@@ -35,14 +35,22 @@ impl AppIMU {
             ))
             .unwrap();
         let timestamp = chrono::Utc::now().timestamp_millis();
-        if self.invert{
-            file.write_all(format!("{}:{:?}\n", timestamp, self.q0.conjugate() * self.q1).as_bytes())
+        if self.invert {
+            file.write_all(
+                format!("{}:{:?}\n", timestamp, self.q0.conjugate() * self.q1).as_bytes(),
+            )
             .unwrap();
-        }else{
-            file.write_all(format!("{}:{:?}\n", timestamp, self.q0.conjugate() * Quaternion::new(0.0, 0.0, 0.0, 1.0) * self.q1).as_bytes())
+        } else {
+            file.write_all(
+                format!(
+                    "{}:{:?}\n",
+                    timestamp,
+                    self.q0.conjugate() * Quaternion::new(0.0, 0.0, 0.0, 1.0) * self.q1
+                )
+                .as_bytes(),
+            )
             .unwrap();
         }
-        
     }
 }
 
@@ -67,11 +75,13 @@ impl super::AppUI for AppIMU {
                 (2.0 * (q.i * q.j + q.w * q.k)).atan2(1.0 - 2.0 * (q.j * q.j + q.k * q.k)),
             );
             egui::Window::new(format!("IMU:{:02x}", self.id))
+                .resizable(true)
+                .default_width(400.0)
                 .vscroll(true)
                 .show(ctx, |ui| {
-                    egui::SidePanel::left(format!("imu_l_panel{}",self.id))
+                    egui::SidePanel::left(format!("imu_l_panel{}", self.id))
                         .resizable(true)
-                        .default_width(250.0)
+                        .default_width(150.0)
                         .show_inside(ui, |ui| {
                             ui.heading("Euler angles:");
                             ui.label(format!("roll:\t{:4.3}°", phi.to_degrees()));
@@ -107,7 +117,7 @@ impl super::AppUI for AppIMU {
                                     ));
                                     self.save_offset();
                                 }
-                                if ui.checkbox(&mut self.invert, "invert").changed(){
+                                if ui.checkbox(&mut self.invert, "invert").changed() {
                                     self.save_offset();
                                 }
                                 ui.add_space(10.0);
@@ -130,41 +140,22 @@ impl super::AppUI for AppIMU {
                                 ui.label(format!("\tsys : {}/3", (imu.calib & 0x000F)));
                             });
                         });
-
-                    let plt = egui_plot::Plot::new("imu").data_aspect(1.0);
-                    let pt_c_roll: egui_plot::PlotPoints = (0..512)
-                        .map(|i| {
-                            let theta = i as f64 / 512.0 * 2.0 * PI;
-                            [theta.cos() - 1.0, theta.sin()]
-                        })
-                        .collect();
-                    let line_c_roll =
-                        egui_plot::Line::new(pt_c_roll).color(egui::Color32::from_rgb(0, 127, 127));
-                    let line_roll = egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
-                        [-phi.cos() - 1.0, -phi.sin()],
-                        [phi.cos() - 1.0, phi.sin()],
-                    ]))
-                    .color(egui::Color32::from_rgb(0, 127, 255));
-
-                    let pt_c_yaw: egui_plot::PlotPoints = (0..512)
-                        .map(|i| {
-                            let theta = i as f64 / 512.0 * 2.0 * PI;
-                            [theta.cos() + 1.0, theta.sin()]
-                        })
-                        .collect();
-                    let line_c_yaw =
-                        egui_plot::Line::new(pt_c_yaw).color(egui::Color32::from_rgb(255, 127, 0));
-                    let line_yaw = egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
-                        [1.0, 0.0],
-                        [-psi.sin() + 1.0, psi.cos()],
-                    ]))
-                    .color(egui::Color32::from_rgb(0, 127, 255));
-                    plt.show(ui, |plt_ui| {
-                        plt_ui.line(line_c_yaw);
-                        plt_ui.line(line_yaw);
-                        plt_ui.line(line_c_roll);
-                        plt_ui.line(line_roll);
-                    });
+                        let size = ui.available_size();
+                        let (response, painter) = ui.allocate_painter(size, Sense::hover());
+                        let rect = response.rect;
+                        let mut c = rect.center();
+                        c.x=rect.min.x+rect.width()/4.0;
+                        let r = rect.width() / 4.0 - 1.0;
+                        let c_pitch = c + r*(-theta.sin() as f32)*Vec2::new(phi.sin() as f32,phi.cos() as f32);
+                        let stroke_frame = Stroke::new(1.0, Color32::DARK_GRAY);
+                        painter.circle_stroke(c, r, stroke_frame);
+                        painter.line_segment([
+                            c - Vec2::new(r, 0.0),
+                            c + Vec2::new(r, 0.0)], stroke_frame);
+                            let stroke_body = Stroke::new(1.0, Color32::BLUE);
+                        painter.line_segment([
+                            c_pitch - r*(theta.cos() as f32) * Vec2::new(phi.cos() as f32, -phi.sin() as f32), 
+                            c_pitch + r*(theta.cos() as f32) * Vec2::new(phi.cos() as f32, -phi.sin() as f32)], stroke_body);
                 });
         }
     }

@@ -46,7 +46,7 @@ class ServoController(Sensor):
         return self.id
 
 class Pitot(Sensor):
-    def __init__(self,_id:int=0x21) -> None:
+    def __init__(self,_id:int=0x31) -> None:
         super().__init__()
         self.id=_id
         self.raw_data={
@@ -72,7 +72,7 @@ class Pitot(Sensor):
         return self.id
 
 class Tachometer(Sensor):
-    def __init__(self,_id:int=0x31) -> None:
+    def __init__(self,_id:int=0x21) -> None:
         super().__init__()
         self.id=_id
         self.raw_data={
@@ -81,7 +81,7 @@ class Tachometer(Sensor):
         }
     def parse(self, array: list[int]):
         for n in range(len(array)//16):
-            _id,timestamp,rpm,_,_=struct.unpack(">BxxxIhhf",bytes(array[16*n:16*(n+1)]))
+            _id,timestamp,rpm,power,=struct.unpack(">BxxxIff",bytes(array[16*n:16*(n+1)]))
             self.raw_data[f"timestamp_{self.id:02x}"].append(timestamp)
             self.raw_data[f"cadence_{self.id:02x}"].append(rpm/1.5)
         return len(array)//16
@@ -93,26 +93,53 @@ class Tachometer(Sensor):
         return self.id
 
 class IMU(Sensor):
-    def __init__(self,_id:int=0x40) -> None:
+    def __init__(self,_id:int=0x40,q_offset=np.eye(4,1)) -> None:
         super().__init__()
         self.id=_id
         self.raw_data={
             f"timestamp_{self.id:02x}":[],
-            f"w_{self.id:02x}":[],
-            f"x_{self.id:02x}":[],
-            f"y_{self.id:02x}":[],
-            f"z_{self.id:02x}":[]
+            f"calib_{self.id:02x}":[],
+            f"q_w_{self.id:02x}":[],
+            f"q_x_{self.id:02x}":[],
+            f"q_y_{self.id:02x}":[],
+            f"q_z_{self.id:02x}":[],
+            f"m_x_{self.id:02x}":[],
+            f"m_y_{self.id:02x}":[],
+            f"m_z_{self.id:02x}":[],
+            f"a_x_{self.id:02x}":[],
+            f"a_y_{self.id:02x}":[],
+            f"a_z_{self.id:02x}":[],
+            f"g_x_{self.id:02x}":[],
+            f"g_y_{self.id:02x}":[],
+            f"g_z_{self.id:02x}":[],
         }
     def parse(self, array: list[int]):
-        for n in range(len(array)//20):
-            _,timestamp,w,x,y,z=struct.unpack(">BxxxIhhhhxxxx",bytes(array[20*n:20*(n+1)]))
-            w,x,y,z = w/16384.0,x/16384.0,y/16384.0,z/16384.0
-            self.raw_data[f"timestamp_{self.id:02x}"].append(timestamp)
-            self.raw_data[f"w_{self.id:02x}"].append(w)
-            self.raw_data[f"x_{self.id:02x}"].append(x)
-            self.raw_data[f"y_{self.id:02x}"].append(y)
-            self.raw_data[f"z_{self.id:02x}"].append(z)
-        return len(array)//20
+        for n in range(len(array)//88):
+            _,calib,timestamp=struct.unpack(">BxhI",bytes(array[88*n:88*n+8]))
+            for i in range(3):
+                q_w,q_x,q_y,q_z,m_x,m_y,m_z,a_x,a_y,a_z,g_x,g_y,g_z = struct.unpack(">hhhhhhhhhhhhh",bytes(array[88*n+8+i*26:88*n+8+i*26+26]))
+                self.raw_data[f"timestamp_{self.id:02x}"].append(timestamp+i*(15))
+                self.raw_data[f"calib_{self.id:02x}"].append(calib)
+                
+                q_w,q_x,q_y,q_z = q_w/16384.0,q_x/16384.0,q_y/16384.0,q_z/16384.0
+
+                self.raw_data[f"q_w_{self.id:02x}"].append(q_w)
+                self.raw_data[f"q_x_{self.id:02x}"].append(q_x)
+                self.raw_data[f"q_y_{self.id:02x}"].append(q_y)
+                self.raw_data[f"q_z_{self.id:02x}"].append(q_z)
+                
+                self.raw_data[f"m_x_{self.id:02x}"].append(m_x)
+                self.raw_data[f"m_y_{self.id:02x}"].append(m_y)
+                self.raw_data[f"m_z_{self.id:02x}"].append(m_z)
+                
+                self.raw_data[f"a_x_{self.id:02x}"].append(a_x)
+                self.raw_data[f"a_y_{self.id:02x}"].append(a_y)
+                self.raw_data[f"a_z_{self.id:02x}"].append(a_z)
+                
+                self.raw_data[f"g_x_{self.id:02x}"].append(g_x)
+                self.raw_data[f"g_y_{self.id:02x}"].append(g_y)
+                self.raw_data[f"g_z_{self.id:02x}"].append(g_z)
+        return (len(array)//88)*3
     @property
     def database(self)->dict[str,list]:
         return self.raw_data

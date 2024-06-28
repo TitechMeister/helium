@@ -39,6 +39,8 @@ impl Drawable<ServoData> for ServoData {
                         .text(format!("i_elevator:\t{:4.2}mA", servo_data.current_elevator)),
                 );
                 ui.heading(format!("status:\t{}", servo_data.status));
+                ui.add_space(10.0);
+                ui.label(format!("time:\t{}", servo_data.timestamp));
             });
         }
     }
