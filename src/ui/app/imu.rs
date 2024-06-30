@@ -1,11 +1,13 @@
 use std::f64::consts::FRAC_PI_2;
 
+use eframe::egui::epaint::{Color32, Stroke, Vec2};
 use eframe::egui::{self, Sense};
-use eframe::egui::epaint::{Vec2,Stroke,Color32};
 use nalgebra::Quaternion;
 
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+
+use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 pub struct AppIMU {
     id: u8,
@@ -16,11 +18,33 @@ pub struct AppIMU {
 
 impl AppIMU {
     pub fn new(id: u8) -> Self {
-        Self {
-            id: id,
-            q0: Quaternion::identity(),
-            q1: Quaternion::identity(),
-            invert: false,
+        if let Ok(mut f) = OpenOptions::new()
+            .read(true)
+            .open(format!("log/config/imu{}_offset.bin", id))
+        {
+            let mut q0 = Quaternion::identity();
+            let mut q1 = Quaternion::identity();
+            q0.w = f.read_f64::<LittleEndian>().unwrap();
+            q0.i = f.read_f64::<LittleEndian>().unwrap();
+            q0.j = f.read_f64::<LittleEndian>().unwrap();
+            q0.k = f.read_f64::<LittleEndian>().unwrap();
+            q1.w = f.read_f64::<LittleEndian>().unwrap();
+            q1.i = f.read_f64::<LittleEndian>().unwrap();
+            q1.j = f.read_f64::<LittleEndian>().unwrap();
+            q1.k = f.read_f64::<LittleEndian>().unwrap();
+            Self {
+                id: id,
+                q0: q0,
+                q1: q1,
+                invert: false,
+            }
+        } else {
+            Self {
+                id: id,
+                q0: Quaternion::identity(),
+                q1: Quaternion::identity(),
+                invert: false,
+            }
         }
     }
     pub fn save_offset(&mut self) {
@@ -34,22 +58,29 @@ impl AppIMU {
                 self.id
             ))
             .unwrap();
+
+        let mut config = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .open(format!("log/config/imu{}_offset.bin", self.id))
+            .unwrap();
         let timestamp = chrono::Utc::now().timestamp_millis();
-        if self.invert {
-            file.write_all(
-                format!("{}:{:?}\n", timestamp, self.q0.conjugate() * self.q1).as_bytes(),
-            )
+        file.write_all(format!("{}:{:?},{:?}\n", timestamp, self.q0, self.q1).as_bytes())
             .unwrap();
-        } else {
-            file.write_all(
-                format!(
-                    "{}:{:?}\n",
-                    timestamp,
-                    self.q0.conjugate() * Quaternion::new(0.0, 0.0, 0.0, 1.0) * self.q1
-                )
-                .as_bytes(),
-            )
-            .unwrap();
+        config.write_f64::<LittleEndian>(self.q0.w).unwrap();
+        config.write_f64::<LittleEndian>(self.q0.i).unwrap();
+        config.write_f64::<LittleEndian>(self.q0.j).unwrap();
+        config.write_f64::<LittleEndian>(self.q0.k).unwrap();
+        if !self.invert {
+            config.write_f64::<LittleEndian>(self.q1.w).unwrap();
+            config.write_f64::<LittleEndian>(self.q1.i).unwrap();
+            config.write_f64::<LittleEndian>(self.q1.j).unwrap();
+            config.write_f64::<LittleEndian>(self.q1.k).unwrap();
+        }else{
+            config.write_f64::<LittleEndian>((Quaternion::new(0.0, 0.0, 0.0, 1.0) *self.q1).w).unwrap();
+            config.write_f64::<LittleEndian>((Quaternion::new(0.0, 0.0, 0.0, 1.0) *self.q1).i).unwrap();
+            config.write_f64::<LittleEndian>((Quaternion::new(0.0, 0.0, 0.0, 1.0) *self.q1).j).unwrap();
+            config.write_f64::<LittleEndian>((Quaternion::new(0.0, 0.0, 0.0, 1.0) *self.q1).k).unwrap();
         }
     }
 }
@@ -64,11 +95,13 @@ impl super::AppUI for AppIMU {
                 imu.q_z as f64 / 16384.0,
             );
 
-            let mut q = q_raw * self.q0.conjugate() * self.q1;
-
+            let mut q_offset = self.q0.conjugate() * self.q1;
             if self.invert {
-                q = q_raw * self.q0.conjugate() * Quaternion::new(0.0, 0.0, 0.0, 1.0) * self.q1;
+                q_offset = self.q0.conjugate() * Quaternion::new(0.0, 0.0, 0.0, 1.0) * self.q1;
             }
+
+            let q = q_raw * q_offset;
+
             let (phi, theta, psi) = (
                 (2.0 * (q.w * q.i + q.j * q.k)).atan2(1.0 - 2.0 * (q.i * q.i + q.j * q.j)),
                 (-2.0 * (q.i * q.k - q.w * q.j)).asin(),
@@ -140,22 +173,33 @@ impl super::AppUI for AppIMU {
                                 ui.label(format!("\tsys : {}/3", (imu.calib & 0x000F)));
                             });
                         });
-                        let size = ui.available_size();
-                        let (response, painter) = ui.allocate_painter(size, Sense::hover());
-                        let rect = response.rect;
-                        let mut c = rect.center();
-                        c.x=rect.min.x+rect.width()/4.0;
-                        let r = rect.width() / 4.0 - 1.0;
-                        let c_pitch = c + r*(-theta.sin() as f32)*Vec2::new(phi.sin() as f32,phi.cos() as f32);
-                        let stroke_frame = Stroke::new(1.0, Color32::DARK_GRAY);
-                        painter.circle_stroke(c, r, stroke_frame);
-                        painter.line_segment([
-                            c - Vec2::new(r, 0.0),
-                            c + Vec2::new(r, 0.0)], stroke_frame);
-                            let stroke_body = Stroke::new(1.0, Color32::BLUE);
-                        painter.line_segment([
-                            c_pitch - r*(theta.cos() as f32) * Vec2::new(phi.cos() as f32, -phi.sin() as f32), 
-                            c_pitch + r*(theta.cos() as f32) * Vec2::new(phi.cos() as f32, -phi.sin() as f32)], stroke_body);
+                    let size = ui.available_size();
+                    let (response, painter) = ui.allocate_painter(size, Sense::hover());
+                    let rect = response.rect;
+                    let mut c = rect.center();
+                    c.x = rect.min.x + rect.width() / 4.0;
+                    let r = rect.width() / 4.0 - 1.0;
+                    let c_pitch = c + r
+                        * (-theta.sin() as f32)
+                        * Vec2::new(phi.sin() as f32, phi.cos() as f32);
+                    let stroke_frame = Stroke::new(1.0, Color32::DARK_GRAY);
+                    painter.circle_stroke(c, r, stroke_frame);
+                    painter
+                        .line_segment([c - Vec2::new(r, 0.0), c + Vec2::new(r, 0.0)], stroke_frame);
+                    painter
+                        .line_segment([c - Vec2::new(0.0, r), c + Vec2::new(0.0, r)], stroke_frame);
+                    let stroke_body = Stroke::new(1.0, Color32::BLUE);
+                    painter.line_segment(
+                        [
+                            c_pitch
+                                - r * (theta.cos() as f32)
+                                    * Vec2::new(phi.cos() as f32, -phi.sin() as f32),
+                            c_pitch
+                                + r * (theta.cos() as f32)
+                                    * Vec2::new(phi.cos() as f32, -phi.sin() as f32),
+                        ],
+                        stroke_body,
+                    );
                 });
         }
     }
