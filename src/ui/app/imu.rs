@@ -18,9 +18,10 @@ pub struct AppIMU {
 
 impl AppIMU {
     pub fn new(id: u8) -> Self {
+        std::fs::create_dir_all(dirs::home_dir().unwrap().join(".helium/config")).unwrap();
         if let Ok(mut f) = OpenOptions::new()
             .read(true)
-            .open(format!("log/config/imu{}_offset.bin", id))
+            .open(format!("{}/imu{}_offset.bin", dirs::home_dir().unwrap().join(".helium/config").display(), id))
         {
             let mut q0 = Quaternion::identity();
             let mut q1 = Quaternion::identity();
@@ -62,7 +63,7 @@ impl AppIMU {
         let mut config = OpenOptions::new()
             .write(true)
             .create(true)
-            .open(format!("log/config/imu{}_offset.bin", self.id))
+            .open(format!("{}/imu{}_offset.bin", dirs::home_dir().unwrap().join(".helium/config").display(), self.id))
             .unwrap();
         let timestamp = chrono::Utc::now().timestamp_millis();
         file.write_all(format!("{}:{:?},{:?}\n", timestamp, self.q0, self.q1).as_bytes())
