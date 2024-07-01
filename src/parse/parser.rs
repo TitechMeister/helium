@@ -1,4 +1,3 @@
-use log::info;
 use std::fs::OpenOptions;
 use std::io::prelude::*;
 use crate::parse::{decode_cobs, AltData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData};
@@ -12,7 +11,7 @@ fn parse_data<T>(data: &mut Vec<T>,decoded: &Vec<u8>)
 where T: Data+Debug+Copy+Clone{
     for i in 0..decoded.len()/T::get_size(){
         let item = T::parse(&decoded[i*T::get_size()..(i+1)*T::get_size()].to_vec());
-        info!("{:?}",item);
+        println!("{:?}",item);
         data.push(item);
     }
     if data.len() > 100 {
@@ -68,6 +67,16 @@ impl Parser {
         }
     }
 
+    pub fn write(&mut self, buf: &Vec<u8>) {
+        let cobs=crate::parse::cobs::encode_cobs(&buf);
+        match self.port.as_mut() {
+            Some(port) => {
+                port.write(&cobs[..]).unwrap();
+            }
+            None => {}
+        }
+    }
+
     pub fn get_imu(&self,id:u8) -> &Vec<IMUData> {
         &self.imu[(id&0x0f) as usize]
     }
@@ -114,7 +123,7 @@ impl Parser {
                     let mut rest: Vec<u8> = vec![];
                     (decoded, rest) = decode_cobs(&self.log);
                     while decoded.len() > 0 {
-                        log::info!("{:?}", decoded);
+                        println!("{:?}", decoded);
                         let mut file = OpenOptions::new()
                             .write(true)
                             .append(true)
@@ -153,7 +162,7 @@ impl Parser {
                 }
                 Err(ref e) if e.kind() == std::io::ErrorKind::TimedOut => (),
                 Err(e) => {
-                    log::error!("{:?}", e);
+                    println!("{:?}", e);
                     self.port = None;
                 },
             },

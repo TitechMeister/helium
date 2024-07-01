@@ -111,12 +111,12 @@ impl eframe::App for MeisterApp {
                     crate::parse::VaneData::draw(self.parser.get_vane_data(), ctx);
 
                     for imu in &mut self.imu {
-                        imu.update(&self.parser, ctx);
+                        imu.update(&mut self.parser, ctx);
                     }
 
-                    self.menu.update(&self.parser, ctx);
+                    self.menu.update(&mut self.parser, ctx);
 
-                    self.gps.update(&self.parser, ctx);
+                    self.gps.update(&mut self.parser, ctx);
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {

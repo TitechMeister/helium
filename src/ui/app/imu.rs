@@ -87,7 +87,7 @@ impl AppIMU {
 }
 
 impl super::AppUI for AppIMU {
-    fn update(&mut self, data: &crate::parse::Parser, ctx: &eframe::egui::Context) {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         if let Some(imu) = data.get_imu(self.id).last() {
             let q_raw = Quaternion::new(
                 imu.q_w as f64 / 16384.0,

@@ -1,5 +1,6 @@
 use std::f64::consts::PI;
 
+use byteorder::{BigEndian, ByteOrder};
 use eframe::egui::{self, Stroke};
 
 pub struct Gps {
@@ -23,7 +24,7 @@ impl Gps {
 }
 
 impl super::AppUI for Gps {
-    fn update(&mut self, data: &crate::parse::Parser, ctx: &eframe::egui::Context) {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         egui::Window::new(format!("GPS")).show(ctx, |ui| {
 
              // https://www.trail-note.net/tech/coordinate/
@@ -99,7 +100,6 @@ impl super::AppUI for Gps {
 
             egui::SidePanel::right("GPS_r_panel")
                 .resizable(true)
-                .default_width(150.0)
                 .show_inside(ui, |ui| {
                     if let Some(gps_data) = data.get_gps_data().last() {
                         ui.heading(format!("lon:\t{}", gps_data.longitude));
@@ -126,6 +126,11 @@ impl super::AppUI for Gps {
                         ui.label(format!("mouse pos:\t{:1.3},{:1.3}", pos_lon, pos_lat)); // GPS coordinate
                         if ui.button("set goal").clicked() {
                             self.goal = Some((pos_lon, pos_lat));
+                            let mut bytes=[0u8;20];
+                            bytes[0]=0x01; // message id
+                            BigEndian::write_f64(&mut bytes[4..12], pos_lon);
+                            BigEndian::write_f64(&mut bytes[12..20], pos_lat);
+                            data.write(&bytes.to_vec());
                         }
                     }
                     if let Some((lon,lat)) = self.goal {

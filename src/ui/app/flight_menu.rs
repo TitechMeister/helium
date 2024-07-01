@@ -17,7 +17,7 @@ impl FlightMenu {
 }
 
 impl super::AppUI for FlightMenu {
-    fn update(&mut self, __data: &crate::parse::Parser, ctx: &eframe::egui::Context) {
+    fn update(&mut self, __data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         egui::Window::new(format!("Flight Menu"))
             .show(ctx, |ui| {
                 ui.horizontal(|ui|{
