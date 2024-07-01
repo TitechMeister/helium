@@ -29,7 +29,10 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "Meister App",
         options,
-        Box::new(|_| Box::<MeisterApp>::default()),
+        Box::new(|cc|{ 
+            egui_extras::install_image_loaders(&cc.egui_ctx);
+            Box::<MeisterApp>::default()
+        }),
     )
 }
 
