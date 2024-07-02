@@ -2,6 +2,7 @@ import requests
 from itertools import product
 import numpy as np
 import os
+import cv2
 
 def get_tile(z, x, y):
     """
@@ -40,7 +41,40 @@ zoom_level, X, Y = 14, np.arange(14377,14394+1), np.arange(6461,6483+1)
 # zoom_level, X, Y = 17, np.arange(116392,116393+1), np.arange(51646,51649+1)
 # zoom_level, X, Y = 18, np.arange(232785,232787+1), np.arange(103293,103299+1)
 
-for (i,j) in product(X,Y):
-    get_tile(zoom_level, i, j)
+# for (i,j) in product(X,Y):
+#     get_tile(zoom_level, i, j)
+
+def get_tile_area(min, max):
+    """
+    Get tiles in the area specified by min and max.
+    """
+    assert min[0] == max[0], "check zoom level"
+    zoom = min[0]
+    im_v_lst = []
+    for i in range(max[1]-min[1]+1):
+        for j in range(max[2]-min[2]+1):
+            filepath = path = "tile/{}_{}_{}.jpg".format(zoom, i+min[1], j+min[2])
+            if os.path.exists(filepath) == True:
+                continue
+            get_tile(zoom, i+min[1], j+min[2])
+
+def cat_tile(north_west, south_east):
+    zoom = north_west[0]
+    im_v_lst = []
+    for i in range(south_east[2]-north_west[2]+1):
+        im_h_lst = []
+        for j in range(south_east[1]-north_west[1]+1):
+            path = "tile/{}_{}_{}.jpg".format(zoom, j+north_west[1], i+north_west[2])
+            im1 = cv2.imread(path,-1)
+            im_h_lst.append(im1)
+        im_h = cv2.hconcat(im_h_lst)
+        im_v_lst.append(im_h)
+    im_v = cv2.vconcat(im_v_lst)
+    cv2.imwrite("tile/tile.png", im_v)
+
+
+# get_tile_area((14, 14377, 6461), (14, 14394, 6483))
+
+cat_tile((14, 14377, 6461), (14, 14394, 6483))
 
 # get_tile(16, 58196, 25823)

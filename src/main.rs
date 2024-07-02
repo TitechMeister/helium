@@ -84,6 +84,10 @@ impl eframe::App for MeisterApp {
         self.parser.parse();
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.request_repaint_after(std::time::Duration::from_millis(25));
+            
+            self.menu.update(&mut self.parser, ctx);
+            self.gps.update(&mut self.parser, ctx);
+
             match self.parser.get_port() {
                 Some(_) => {
                     ui.label(format!("Connected to port: {}", self.port));
@@ -114,9 +118,6 @@ impl eframe::App for MeisterApp {
                         imu.update(&mut self.parser, ctx);
                     }
 
-                    self.menu.update(&mut self.parser, ctx);
-
-                    self.gps.update(&mut self.parser, ctx);
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {
