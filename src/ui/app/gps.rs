@@ -1,16 +1,24 @@
-use std::f64::consts::PI;
+use std::f64::consts::{PI, TAU};
 
 use byteorder::{BigEndian, ByteOrder};
 use eframe::egui::{self, ColorImage};
 
 pub struct Gps {
-    zoom_level: u8,
+    /// Latitude
     lat: f64,
+    /// Longitude
     lon: f64,
+    /// Zoom level
+    zoom_level: u8,
+    /// Map x coordinate
     map_x: i64,
+    /// Map y coordinate
     map_y: i64,
-    pos: Option<(f64, f64)>,  // (x, y)
-    goal: Option<(f64, f64)>, // (lat, lon)
+    /// Selected position (pixel coordinate)
+    pos: Option<(f64, f64)>,
+    /// Goal position (GPS coordinate)
+    goal: Option<(f64, f64)>,
+    /// Map image
     img: Option<ColorImage>,
     is_tracking: bool,
     area_size: f64,
@@ -50,6 +58,8 @@ impl Gps {
             area_size: 500.0,
         }
     }
+
+    /// タイルマップの取得
     fn open_img(&mut self, zoom: u8, map_x: i64, map_y: i64) {
         if let Ok(img) = image::open(format!("assets/map/{}-{}-{}.png", zoom, map_x, map_y)) {
             let color_img = ColorImage::from_rgb(
@@ -62,22 +72,40 @@ impl Gps {
             self.img = Some(color_img);
         }
     }
+    /// GPS座標をピクセル座標に変換
+    fn gps2pixel(&self, lat: f64, lon: f64) -> (i64, i64) {
+        // https://www.trail-note.net/tech/coordinate/
+        let x = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) * (lon / 180.0 + 1.0)) as i64;
+        let y = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
+            * (-lat.to_radians().sin().atanh()
+                + 85.05112878_f64.to_radians().sin().atanh())) as i64;
+        (x, y)
+    }
+    /// ピクセル座標をGPS座標に変換
+    fn pixel2gps(&self, x: i64, y: i64) -> (f64, f64) {
+        // https://www.trail-note.net/tech/coordinate/
+        let lon = 180.0
+            * ((x as f64 + 256.0 * self.map_x as f64) / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
+                - 1.0);
+        let lat = 180.0 / PI
+            * ((-PI * (-y as f64 + 256.0 * self.map_y as f64)
+                / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
+                + 85.05112878_f64.to_radians().sin().atanh())
+            .tanh())
+            .asin();
+        (lat, lon)
+    }
 }
 
 impl super::AppUI for Gps {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
-        // let platform_pos = (35.294230, 136.254344);
-        // let takeshima_pos = (35.416626, 136.124324);
-        // let okishima_pos = (35.250789, 136.063712);
+        let platform_pos = (35.294230, 136.254344);
+        let chikubushima_pos = (35.416626, 136.124324);
+        let okishima_pos = (35.250789, 136.063712);
+        let mid_pos= (35.340891,136.064750);
 
         egui::Window::new(format!("GPS")).show(ctx, |ui| {
-            // https://www.trail-note.net/tech/coordinate/
-
-            let x =
-                ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) * (self.lon / 180.0 + 1.0)) as i64;
-            let y = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
-                * (-self.lat.to_radians().sin().atanh()
-                    + 85.05112878_f64.to_radians().sin().atanh())) as i64;
+            let (x, y) = self.gps2pixel(self.lat, self.lon);
 
             // Control Panel
 
@@ -90,22 +118,17 @@ impl super::AppUI for Gps {
                         ui.heading(format!("lat:\t{}", gps_data.latitude));
                         ui.add_space(10.0);
                         ui.label(format!("timestamp:\t{}ms", gps_data.timestamp));
+
+                        self.lat = gps_data.latitude;
+                        self.lon = gps_data.longitude;
                     }
 
                     if let Some(pos) = self.pos {
                         // https://www.trail-note.net/tech/coordinate/
 
-                        let pos_lon = 180.0
-                            * ((pos.0 as f64 + 256.0 * self.map_x as f64)
-                                / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
-                                - 1.0);
-                        let pos_lat = 180.0 / PI
-                            * ((-PI * (-pos.1 as f64 + 256.0 * self.map_y as f64)
-                                / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
-                                + 85.05112878_f64.to_radians().sin().atanh())
-                            .tanh())
-                            .asin();
+                        let (pos_lat, pos_lon) = self.pixel2gps(pos.0 as i64, pos.1 as i64);
 
+                        // 目的地の設定
                         if ui.button("Set Goal").clicked() {
                             self.goal = Some((pos_lat, pos_lon));
                             self.pos = None;
@@ -128,10 +151,12 @@ impl super::AppUI for Gps {
 
                     ui.add_space(20.0);
 
+                    // Tracking Modeの設定
                     ui.checkbox(&mut self.is_tracking, "Tracking");
 
                     ui.add_space(10.0);
 
+                    // Tracking ModeのArea Sizeの設定
                     if self.is_tracking {
                         ui.label("Area Size");
                         ui.add(
@@ -143,29 +168,25 @@ impl super::AppUI for Gps {
                 });
 
             // Plot Area
-
             egui::CentralPanel::default().show_inside(ui, |ui| {
                 let plt = egui_plot::Plot::new("GPS").data_aspect(1.0);
+
+                // 軌跡をプロット
                 let point: egui_plot::PlotPoints = data
                     .get_gps_data()
                     .iter()
                     .map(|gps_data| {
-                        let x = ((2.0_f64.powf(self.zoom_level as f64 + 7.0))
-                            * (gps_data.longitude / 180.0 + 1.0))
-                            as f64;
-                        let y = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
-                            * (-gps_data.latitude.to_radians().sin().atanh()
-                                + 85.05112878_f64.to_radians().sin().atanh()))
-                            as f64;
-                        [x, y]
+                        let (x, y) = self.gps2pixel(gps_data.latitude, gps_data.longitude);
+                        [x as f64, y as f64]
                     })
                     .collect();
                 let line = egui_plot::Line::new(point)
                     .color(egui::Color32::from_rgb(0, 0, 0))
                     .name("path");
 
-                let mut image: Option<egui_plot::PlotImage> = None;
 
+                // タイルマップを表示
+                let mut image: Option<egui_plot::PlotImage> = None;
                 if let Some(img) = &self.img {
                     let texture = ctx.load_texture("map", img.clone(), Default::default());
                     image = Some(egui_plot::PlotImage::new(
@@ -177,6 +198,7 @@ impl super::AppUI for Gps {
                         (img.width() as f32, img.height() as f32),
                     ));
                 } else {
+                    // 失敗した場合はデフォルトのタイルマップを表示
                     self.open_img(12, 3594, 1615);
                 }
 
@@ -201,6 +223,8 @@ impl super::AppUI for Gps {
                             .name("current")
                             .width(0.5),
                     );
+
+                    // クリックした位置をプロット
                     if let Some(pos) = self.pos {
                         plot_ui.add(
                             egui_plot::Points::new(vec![[pos.0, pos.1]])
@@ -210,13 +234,71 @@ impl super::AppUI for Gps {
                                 .radius(5.0)
                         );
                     }
+
+                    // 旋回ポイントをプロット
+                    let radius = 20.0;
+
+                    // プラホ
+                    let (platform_x, platform_y) = self.gps2pixel(platform_pos.0, platform_pos.1);
+                    plot_ui.line(
+                        egui_plot::Line::new(egui_plot::PlotPoints::new(
+                            (0..=512)
+                                .map(|i| {
+                                    let theta = TAU / 512.0 * i as f64;
+                                    [((platform_x - self.map_x * 256) as f64) + radius*theta.cos(), -(platform_y-self.map_y*256) as f64 + radius*theta.sin()]
+                                })
+                                .collect()
+                        ))
+                        .color(egui::Color32::from_rgb(0xFF, 0, 0))
+                    );
+
+                    // 竹生島
+                    let (chikubushima_x, chikubushima_y) = self.gps2pixel(chikubushima_pos.0, chikubushima_pos.1);
+                    plot_ui.line(
+                        egui_plot::Line::new(egui_plot::PlotPoints::new(
+                            (0..=512)
+                                .map(|i| {
+                                    let theta = TAU / 512.0 * i as f64;
+                                    [((chikubushima_x - self.map_x * 256) as f64) + radius*theta.cos(), -(chikubushima_y-self.map_y*256) as f64 + radius*theta.sin()]
+                                })
+                                .collect()
+                        ))
+                        .color(egui::Color32::from_rgb(0xFF, 0, 0))
+                    );
+
+                    // 沖島
+                    let (okishima_x, okishima_y) = self.gps2pixel(okishima_pos.0, okishima_pos.1);
+                    plot_ui.line(
+                        egui_plot::Line::new(egui_plot::PlotPoints::new(
+                            (0..=512)
+                                .map(|i| {
+                                    let theta = TAU / 512.0 * i as f64;
+                                    [((okishima_x - self.map_x * 256) as f64) + radius*theta.cos(), -(okishima_y-self.map_y*256) as f64 + radius*theta.sin()]
+                                })
+                                .collect()
+                        ))
+                        .color(egui::Color32::from_rgb(0xFF, 0, 0))
+                    );
+
+                    // 二等分線の表示
+                    let (mid_x, mid_y) = self.gps2pixel(mid_pos.0, mid_pos.1);
+                    plot_ui.line(
+                        egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
+                            [
+                                ((mid_x-self.map_x*256) as f64),
+                                -((mid_y-self.map_y*256) as f64),
+                            ],
+                            [
+                                ((platform_x-self.map_x*256) as f64),
+                                -(platform_y-self.map_y*256) as f64,
+                            ],
+                        ]))
+                        .width(1.0),
+                    );
+
+                    // ゴールをプロット
                     if let Some((lat, lon)) = self.goal {
-                        let gx = ((2.0_f64.powf(self.zoom_level as f64 + 7.0))
-                            * (lon / 180.0 + 1.0)) as i64;
-                        let gy = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
-                            * (-lat.to_radians().sin().atanh()
-                                + 85.05112878_f64.to_radians().sin().atanh()))
-                            as i64;
+                        let (gx, gy) = self.gps2pixel(lat, lon);
 
                         plot_ui.line(
                             egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
@@ -242,6 +324,19 @@ impl super::AppUI for Gps {
                         );
                     }
 
+                    plot_ui.line(egui_plot::Line::new(egui_plot::PlotPoints::new(
+                        (0..=10)
+                            .map(|i| {
+                                let x = (i as f64 - 5.0) * 256.0 + (x - self.map_x * 256) as f64;
+                                [x, -((y - self.map_y * 256) as f64)]
+                            })
+                            .collect(),
+                    )));
+
+                    // Tracking Mode : 
+                    //  - 現在位置を中心に表示
+                    //  - エリアサイズ(area_size)を変更可能
+
                     if self.is_tracking {
                         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
                             [
@@ -256,6 +351,8 @@ impl super::AppUI for Gps {
                     }
                     plot_ui.pointer_coordinate()
                 });
+
+                // クリックした位置を取得
 
                 if let Some(_) = response.interact_pointer_pos() {
                     if let Some(pos) = pointer_coordinate {

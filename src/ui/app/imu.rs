@@ -10,8 +10,11 @@ use std::io::prelude::*;
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
 pub struct AppIMU {
+    /// IMU id
     id: u8,
+    /// Offset quaternion 0
     q0: Quaternion<f64>,
+    /// Offset quaternion 1
     q1: Quaternion<f64>,
     invert: bool,
 }
@@ -19,6 +22,7 @@ pub struct AppIMU {
 impl AppIMU {
     pub fn new(id: u8) -> Self {
         std::fs::create_dir_all(dirs::home_dir().unwrap().join(".helium/config")).unwrap();
+        // IMUの設定ファイルの存在確認
         if let Ok(mut f) = OpenOptions::new()
             .read(true)
             .open(format!("{}/imu{}_offset.bin", dirs::home_dir().unwrap().join(".helium/config").display(), id))
@@ -48,6 +52,7 @@ impl AppIMU {
             }
         }
     }
+    /// offsetを保存
     pub fn save_offset(&mut self) {
         let mut file = OpenOptions::new()
             .write(true)
