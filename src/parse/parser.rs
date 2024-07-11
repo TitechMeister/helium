@@ -104,7 +104,6 @@ impl Parser {
         &self.vane_data
     }
 
-    #[allow(unused_assignments)]
     pub fn parse(&mut self) {
         let mut serial_buf = [0; 1024];
         match self.port {
@@ -119,9 +118,7 @@ impl Parser {
                     file.write_all(&serial_buf[..n]).unwrap();
 
                     self.log.extend(serial_buf[..n].iter());
-                    let mut decoded: Vec<u8> = vec![];
-                    let mut rest: Vec<u8> = vec![];
-                    (decoded, rest) = decode_cobs(&self.log);
+                    let (mut decoded, mut rest) = decode_cobs(&self.log);
                     while decoded.len() > 0 {
                         println!("{:?}", decoded);
                         let mut file = OpenOptions::new()
