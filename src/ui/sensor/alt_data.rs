@@ -21,8 +21,16 @@ impl Drawable<AltData> for AltData {
                     .collect();
                 let line = egui_plot::Line::new(point)
                     .color(egui::Color32::from_rgb(0, 64, 255))
-                    .name("altitude");
+                    .name("altitude")
+                    .fill(0.0);
+                // find the max altitude
+                let altitude:Vec<f32> = data.iter().map(|x| x.altitude).collect();
+                let max_altitude:f32 = altitude.iter().fold(0.0, |a, &b| a.max(b));
+
                 plt.show(ui, |plot_ui| {
+                    plot_ui.set_plot_bounds(
+                        egui_plot::PlotBounds::from_min_max([0.0,0.0], [100.0,max_altitude as f64 / 100.0])
+                    );
                     plot_ui.line(line);
                 });
             });

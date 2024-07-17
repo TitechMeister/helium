@@ -20,7 +20,8 @@ impl Drawable<PitotData> for PitotData {
                     .collect();
                 let line = egui_plot::Line::new(point)
                     .color(egui::Color32::from_rgb(255, 0, 0))
-                    .name("velocity");
+                    .name("velocity")
+                    .fill(0.0);
                 plt.show(ui, |plot_ui| {
                     plot_ui.line(line);
                 });
