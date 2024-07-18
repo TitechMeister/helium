@@ -14,8 +14,8 @@ use ui::{
     // flight_menu::FlightMenu,
     gps::Gps,
     imu::IMUUI,
-    pitot_data::PitotUI,
-    servo_data::ServoUI,
+    pitot::PitotUI,
+    servo::ServoUI,
     tachometer::TachUI,
     vane::VaneUI
 };

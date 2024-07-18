@@ -15,7 +15,7 @@ impl TachUI {
 
 impl AppUI for TachUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &egui::Context) {
-        if let Some(vane_data) = data.get_tach_data(0).last() {
+        if let Some(vane_data) = data.get_tach_data(1).last() {
             egui::Window::new(format!("Tachometer{:02x}", vane_data.id))
                 .vscroll(true)
                 .show(ctx, |ui| {

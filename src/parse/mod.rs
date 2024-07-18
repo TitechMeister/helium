@@ -1,11 +1,11 @@
 mod cobs;
 
-mod ultra_sonic_data;
+mod ultra_sonic;
 mod barometer;
 mod gps;
-mod imu_data;
+mod imu;
 mod pitot;
-mod servo_data;
+mod servo;
 mod tachometer;
 mod vane;
 
@@ -13,10 +13,10 @@ mod parser;
 
 pub use cobs::decode_cobs;
 pub use barometer::BarometerData;
-pub use servo_data::ServoData;
-pub use ultra_sonic_data::UltraSonicData;
+pub use servo::ServoData;
+pub use ultra_sonic::UltraSonicData;
 pub use gps::GPSData;
-pub use imu_data::IMUData;
+pub use imu::IMUData;
 pub use pitot::PitotData;
 pub use vane::VaneData;
 pub use tachometer::TachData;
