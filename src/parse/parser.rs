@@ -1,6 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use crate::parse::{decode_cobs, AltData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData,TachData};
+use crate::parse::{decode_cobs, UltraSonicData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData,TachData};
 use std::fmt::Debug;
 
 use super::VaneData;
@@ -25,7 +25,7 @@ pub struct Parser {
     gps_data: Vec<GPSData>,
     imu: [Vec<IMUData>;16],
     servo_data: Vec<ServoData>,
-    alt_data: Vec<AltData>,
+    alt_data: Vec<UltraSonicData>,
     barometer_data: [Vec<BarometerData>;2],
     pitot_data:Vec<PitotData>,
     vane_data:Vec<VaneData>,
@@ -87,7 +87,7 @@ impl Parser {
         &self.servo_data
     }
 
-    pub fn get_alt_data(&self) -> &Vec<AltData> {
+    pub fn get_ultra_sonic_data(&self) -> &Vec<UltraSonicData> {
         &self.alt_data
     }
 

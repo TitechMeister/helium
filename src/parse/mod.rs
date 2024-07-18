@@ -1,6 +1,6 @@
 mod cobs;
 
-mod alt_data;
+mod ultra_sonic_data;
 mod barometer;
 mod gps;
 mod imu_data;
@@ -14,7 +14,7 @@ mod parser;
 pub use cobs::decode_cobs;
 pub use barometer::BarometerData;
 pub use servo_data::ServoData;
-pub use alt_data::AltData;
+pub use ultra_sonic_data::UltraSonicData;
 pub use gps::GPSData;
 pub use imu_data::IMUData;
 pub use pitot::PitotData;
