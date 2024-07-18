@@ -114,8 +114,8 @@ impl super::AppUI for Gps {
                 .default_width(400.0)
                 .show_inside(ui, |ui| {
                     if let Some(gps_data) = data.get_gps_data().last() {
-                        ui.heading(format!("lon:\t{}", gps_data.longitude));
-                        ui.heading(format!("lat:\t{}", gps_data.latitude));
+                        ui.label(format!("lon:\t{}", gps_data.longitude));
+                        ui.label(format!("lat:\t{}", gps_data.latitude));
                         ui.add_space(10.0);
                         ui.label(format!("timestamp:\t{}ms", gps_data.timestamp));
 
@@ -132,10 +132,10 @@ impl super::AppUI for Gps {
                         if ui.button("Set Goal").clicked() {
                             self.goal = Some((pos_lat, pos_lon));
                             self.pos = None;
-                            let mut bytes = [0u8; 20];
+                            let mut bytes = [0u8; 32];
                             bytes[0] = 0x01; // message id
-                            BigEndian::write_f64(&mut bytes[4..12], pos_lon);
-                            BigEndian::write_f64(&mut bytes[12..20], pos_lat);
+                            BigEndian::write_f64(&mut bytes[8..16], pos_lon);
+                            BigEndian::write_f64(&mut bytes[16..24], pos_lat);
                             data.write(&bytes.to_vec());
                         }
                     }
@@ -147,6 +147,13 @@ impl super::AppUI for Gps {
                             ((self.lat - lat) / 0.000008983148616)
                                 .hypot((self.lon - lon) / 0.000010966382364)
                         ));
+                        if ui.button("Retry").clicked() {
+                            let mut bytes = [0u8; 32];
+                            bytes[0] = 0x01; // message id
+                            BigEndian::write_f64(&mut bytes[8..16], lon);
+                            BigEndian::write_f64(&mut bytes[16..24], lat);
+                            data.write(&bytes.to_vec());
+                        }
                     }
 
                     ui.add_space(20.0);

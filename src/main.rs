@@ -39,6 +39,7 @@ fn main() -> Result<(), eframe::Error> {
 struct MeisterApp {
     port: String,
     parser: Parser,
+    alt: crate::ui::app::altitude::Altitude,
     imu: [AppIMU; 4],
     menu: FlightMenu,
     gps: Gps,
@@ -56,6 +57,7 @@ impl Default for MeisterApp {
                 AppIMU::new(0x43),
             ],
             menu: FlightMenu::new(),
+            alt: crate::ui::app::altitude::Altitude::new(),
             gps: Gps::new(),
         }
     }
@@ -110,9 +112,11 @@ impl eframe::App for MeisterApp {
 
                     crate::parse::GPSData::draw(self.parser.get_gps_data(), ctx);
 
-                    crate::parse::BarometerData::draw(self.parser.get_barometer_data(), ctx);
+                    crate::parse::TachData::draw(self.parser.get_tach_data(0), ctx);
 
                     crate::parse::VaneData::draw(self.parser.get_vane_data(), ctx);
+
+                    self.alt.update(&mut self.parser, ctx);
 
                     for imu in &mut self.imu {
                         imu.update(&mut self.parser, ctx);
