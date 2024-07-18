@@ -1,13 +1,21 @@
 use std::f64::consts::PI;
 
-use super::Drawable;
-use crate::parse::TachData;
 use eframe::egui::{self, Color32};
 use egui_plot::{Line, PlotPoints};
 
-impl Drawable<TachData> for TachData {
-    fn draw(data: &Vec<TachData>, ctx: &egui::Context) {
-        if let Some(vane_data) = data.last() {
+use super::AppUI;
+
+pub struct TachUI {}
+
+impl TachUI {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl AppUI for TachUI {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &egui::Context) {
+        if let Some(vane_data) = data.get_tach_data(0).last() {
             egui::Window::new(format!("Tachometer{:02x}", vane_data.id))
                 .vscroll(true)
                 .show(ctx, |ui| {

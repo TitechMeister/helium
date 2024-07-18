@@ -27,7 +27,7 @@ pub struct Gps {
 impl Gps {
     pub fn new() -> Self {
         // let map = include_bytes!("../../../assets/map/14-14377-6461.png");
-        let map = include_bytes!("../../../assets/map/12-3594-1615.png");
+        let map = include_bytes!("../../assets/map/12-3594-1615.png");
         let img = image::load_from_memory(map).unwrap();
         let color_img = ColorImage::from_rgb(
             [img.width() as usize, img.height() as usize],

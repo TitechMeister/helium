@@ -9,7 +9,7 @@ use std::io::prelude::*;
 
 use byteorder::{LittleEndian, ReadBytesExt, WriteBytesExt};
 
-pub struct AppIMU {
+pub struct IMUUI {
     /// IMU id
     id: u8,
     /// Offset quaternion 0
@@ -19,7 +19,7 @@ pub struct AppIMU {
     invert: bool,
 }
 
-impl AppIMU {
+impl IMUUI {
     pub fn new(id: u8) -> Self {
         std::fs::create_dir_all(dirs::home_dir().unwrap().join(".helium/config")).unwrap();
         // IMUの設定ファイルの存在確認
@@ -91,7 +91,7 @@ impl AppIMU {
     }
 }
 
-impl super::AppUI for AppIMU {
+impl super::AppUI for IMUUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         if let Some(imu) = data.get_imu(self.id).last() {
             let q_raw = Quaternion::new(

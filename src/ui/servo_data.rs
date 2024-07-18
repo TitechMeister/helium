@@ -1,12 +1,18 @@
-use crate::parse::ServoData;
 use eframe::egui::epaint::{Color32, Stroke};
 use eframe::egui::{self, Sense};
+use super::AppUI;
 
-use super::Drawable;
+pub struct ServoUI {}
 
-impl Drawable<ServoData> for ServoData {
-    fn draw(data: &Vec<ServoData>, ctx: &egui::Context) {
-        if let Some(servo_data) = data.last() {
+impl ServoUI {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl AppUI for ServoUI {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
+        if let Some(servo_data) = data.get_servo_data().last() {
             egui::Window::new("Servo").vscroll(true).show(ctx, |ui| {
                 egui::SidePanel::right("Servo_l_panel").show_inside(ui, |ui| {
                     let size = ui.available_size();

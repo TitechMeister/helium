@@ -1,13 +1,21 @@
 use std::f64::consts::PI;
 
-use super::Drawable;
-use crate::parse::VaneData;
 use eframe::egui::{self, Color32};
 use egui_plot::{Line, PlotPoints};
 
-impl Drawable<VaneData> for VaneData {
-    fn draw(data: &Vec<VaneData>, ctx: &egui::Context) {
-        if let Some(vane_data) = data.last() {
+use super::AppUI;
+
+pub struct VaneUI {}
+
+impl VaneUI {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl AppUI for VaneUI {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &egui::Context) {
+        if let Some(vane_data) = data.get_vane_data().last() {
             egui::Window::new(format!("Vane{:02x}", vane_data.id))
                 .vscroll(true)
                 .show(ctx, |ui| {

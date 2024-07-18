@@ -8,13 +8,19 @@ use eframe::egui::{self, FontData, FontDefinitions, FontFamily, IconData};
 
 use log::info;
 use serialport::available_ports;
-use ui::app::flight_menu::FlightMenu;
-use ui::app::imu::AppIMU;
-use ui::app::gps::Gps;
-use ui::app::AppUI;
+use ui::{
+    AppUI,
+    altitude::AltitudeUI,
+    // flight_menu::FlightMenu,
+    gps::Gps,
+    imu::IMUUI,
+    pitot_data::PitotUI,
+    servo_data::ServoUI,
+    tachometer::TachUI,
+    vane::VaneUI
+};
 
 use crate::parse::Parser;
-use crate::ui::sensor::Drawable;
 use std::env;
 
 fn main() -> Result<(), eframe::Error> {
@@ -39,10 +45,16 @@ fn main() -> Result<(), eframe::Error> {
 struct MeisterApp {
     port: String,
     parser: Parser,
-    alt: crate::ui::app::altitude::Altitude,
-    imu: [AppIMU; 4],
-    menu: FlightMenu,
+
+    alt: AltitudeUI,
     gps: Gps,
+    imu: [IMUUI; 4],
+    pitot: PitotUI,
+    servo: ServoUI,
+    tach: TachUI,
+    vane: VaneUI,
+
+    // menu: FlightMenu,
 }
 
 impl Default for MeisterApp {
@@ -50,15 +62,19 @@ impl Default for MeisterApp {
         Self {
             port: "".to_owned(),
             parser: Parser::new(),
-            imu: [
-                AppIMU::new(0x40),
-                AppIMU::new(0x41),
-                AppIMU::new(0x42),
-                AppIMU::new(0x43),
-            ],
-            menu: FlightMenu::new(),
-            alt: crate::ui::app::altitude::Altitude::new(),
+            alt: AltitudeUI::new(),
             gps: Gps::new(),
+            imu: [
+                IMUUI::new(0x40),
+                IMUUI::new(0x41),
+                IMUUI::new(0x42),
+                IMUUI::new(0x43),
+            ],
+            pitot: PitotUI::new(),
+            servo: ServoUI::new(),
+            tach: TachUI::new(),
+            vane: VaneUI::new(),
+            // menu: FlightMenu::new(),
         }
     }
 }
@@ -87,8 +103,7 @@ impl eframe::App for MeisterApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.request_repaint_after(std::time::Duration::from_millis(25));
             
-            self.menu.update(&mut self.parser, ctx);
-            self.gps.update(&mut self.parser, ctx);
+            // self.menu.update(&mut self.parser, ctx);
 
             match self.parser.get_port() {
                 Some(_) => {
@@ -100,27 +115,15 @@ impl eframe::App for MeisterApp {
                             .labelled_by(filename_label.id);
                     });
 
-                    // for i in 0..3 {
-                    //     crate::parse::IMUData::draw(self.parser.get_imu(i as u8), ctx);
-                    // }
-
-                    crate::parse::AltData::draw(self.parser.get_alt_data(), ctx);
-
-                    crate::parse::PitotData::draw(self.parser.get_pitot_data(), ctx);
-
-                    crate::parse::ServoData::draw(self.parser.get_servo_data(), ctx);
-
-                    crate::parse::GPSData::draw(self.parser.get_gps_data(), ctx);
-
-                    crate::parse::TachData::draw(self.parser.get_tach_data(0), ctx);
-
-                    crate::parse::VaneData::draw(self.parser.get_vane_data(), ctx);
-
                     self.alt.update(&mut self.parser, ctx);
-
+                    self.gps.update(&mut self.parser, ctx);
                     for imu in &mut self.imu {
                         imu.update(&mut self.parser, ctx);
                     }
+                    self.pitot.update(&mut self.parser, ctx);
+                    self.servo.update(&mut self.parser, ctx);
+                    self.tach.update(&mut self.parser, ctx);
+                    self.vane.update(&mut self.parser, ctx);
 
                 }
                 None => {

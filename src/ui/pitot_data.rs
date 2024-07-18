@@ -1,10 +1,16 @@
-use crate::parse::PitotData;
 use eframe::egui;
-use super::Drawable;
 
-impl Drawable<PitotData> for PitotData {
-    fn draw(data: &Vec<PitotData>, ctx: &egui::Context) {
-        if let Some(pitot_data) = data.last() {
+pub struct PitotUI {}
+
+impl PitotUI {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
+
+impl super::AppUI for PitotUI {
+    fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
+        if let Some(pitot_data) = data.get_pitot_data().last() {
             egui::Window::new("Pitot").vscroll(true).show(ctx, |ui| {
                 ui.heading(format!(
                     "velocity:\t{:2.2}m/s\ttimestamp:\t{}ms",
@@ -13,7 +19,7 @@ impl Drawable<PitotData> for PitotData {
                 let plt = egui_plot::Plot::new("velocity")
                     .allow_zoom(false)
                     .allow_scroll(false);
-                let point: egui_plot::PlotPoints = data
+                let point: egui_plot::PlotPoints = data.get_pitot_data()
                     .iter()
                     .enumerate()
                     .map(|(n, _data)| [n as f64, _data.velocity as f64])
