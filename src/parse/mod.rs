@@ -6,6 +6,7 @@ mod gps;
 mod imu_data;
 mod pitot;
 mod servo_data;
+mod tachometer;
 mod vane;
 
 mod parser;
@@ -18,6 +19,7 @@ pub use gps::GPSData;
 pub use imu_data::IMUData;
 pub use pitot::PitotData;
 pub use vane::VaneData;
+pub use tachometer::TachData;
 pub use parser::Parser;
 
 pub trait Data{

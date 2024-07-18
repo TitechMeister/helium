@@ -8,6 +8,7 @@ mod vane;
 mod imu_data;
 mod pitot_data;
 mod servo_data;
+mod tachometer;
 
 pub trait Drawable<T>
 where

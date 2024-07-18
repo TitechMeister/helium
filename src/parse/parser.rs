@@ -1,6 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
-use crate::parse::{decode_cobs, AltData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData};
+use crate::parse::{decode_cobs, AltData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData,TachData};
 use std::fmt::Debug;
 
 use super::VaneData;
@@ -26,9 +26,10 @@ pub struct Parser {
     imu: [Vec<IMUData>;16],
     servo_data: Vec<ServoData>,
     alt_data: Vec<AltData>,
-    barometer_data: Vec<BarometerData>,
+    barometer_data: [Vec<BarometerData>;2],
     pitot_data:Vec<PitotData>,
     vane_data:Vec<VaneData>,
+    tac_data: [Vec<TachData>;2],
     port: Option<Box<dyn serialport::SerialPort>>,
 }
 
@@ -44,10 +45,11 @@ impl Parser {
                     Vec::new(),Vec::new(),Vec::new(),Vec::new() ],
             servo_data: Vec::new(),
             alt_data: Vec::new(),
-            barometer_data: Vec::new(),
+            barometer_data: [Vec::new(),Vec::new()],
             pitot_data:Vec::new(),
             gps_data: Vec::new(),
             vane_data: Vec::new(),
+            tac_data: [Vec::new(),Vec::new()],
             port: None,
         }
     }
@@ -89,8 +91,12 @@ impl Parser {
         &self.alt_data
     }
 
-    pub fn get_barometer_data(&self) -> &Vec<BarometerData> {
-        &self.barometer_data
+    pub fn get_barometer_data(&self,id:u8) -> &Vec<BarometerData> {
+        if id==0{
+            &self.barometer_data[0]
+        }else{
+            &self.barometer_data[1]
+        }
     }
 
     pub fn get_pitot_data(&self)->&Vec<PitotData>{
@@ -102,6 +108,10 @@ impl Parser {
 
     pub fn get_vane_data(&self) -> &Vec<VaneData>{
         &self.vane_data
+    }
+
+    pub fn get_tach_data(&self,id:u8) -> &Vec<TachData> {
+        &self.tac_data[(id&0x01) as usize]
     }
 
     pub fn parse(&mut self) {
@@ -133,6 +143,13 @@ impl Parser {
                             0x10 => {
                                 parse_data(&mut self.servo_data,&decoded);
                             }
+                            0x20 => {
+                                if decoded[0] == 0x20 {
+                                    parse_data(&mut self.tac_data[0],&decoded);
+                                }else if decoded[0]==0x21 {
+                                    parse_data(&mut self.tac_data[1],&decoded);
+                                }
+                            }
                             0x30 => {
                                 parse_data(&mut self.pitot_data,&decoded);
                             }
@@ -149,7 +166,11 @@ impl Parser {
                                 parse_data(&mut self.vane_data, &decoded);
                             }
                             0x90 => {
-                                parse_data(&mut self.barometer_data, &decoded);
+                                if decoded[0] == 0x90{
+                                    parse_data(&mut self.barometer_data[0], &decoded);
+                                }else{
+                                    parse_data(&mut self.barometer_data[1], &decoded);
+                                }
                             }
                             _ => (),
                         }
