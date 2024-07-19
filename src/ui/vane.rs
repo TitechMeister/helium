@@ -15,7 +15,7 @@ impl VaneUI {
 
 impl AppUI for VaneUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &egui::Context) {
-        if let Some(vane_data) = data.get_vane_data().last() {
+        if let Some((vane_data,_)) = data.get_vane_data().last() {
             egui::Window::new(format!("Vane{:02x}", vane_data.id))
                 .vscroll(true)
                 .show(ctx, |ui| {

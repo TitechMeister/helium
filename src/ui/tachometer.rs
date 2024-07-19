@@ -18,7 +18,7 @@ impl AppUI for TachUI {
         egui::Window::new("Tachometer")
             .vscroll(true)
             .show(ctx, |ui| {
-                if let Some(tach_data) = data.get_tach_data(1).last() {
+                if let Some((tach_data,_)) = data.get_tach_data(1).last() {
                     ui.heading(format!("Cadence:\t{}", tach_data.cadence));
                     ui.add_space(10.0);
                     ui.label(format!("timestamp:\t{}ms", tach_data.timestamp));

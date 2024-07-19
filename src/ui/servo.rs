@@ -12,7 +12,7 @@ impl ServoUI {
 
 impl AppUI for ServoUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
-        if let Some(servo_data) = data.get_servo_data().last() {
+        if let Some((servo_data,_)) = data.get_servo_data().last() {
             egui::Window::new("Servo").vscroll(true).show(ctx, |ui| {
                 egui::SidePanel::right("Servo_l_panel").show_inside(ui, |ui| {
                     let size = ui.available_size();

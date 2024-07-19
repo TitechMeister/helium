@@ -93,7 +93,7 @@ impl IMUUI {
 
 impl super::AppUI for IMUUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
-        if let Some(imu) = data.get_imu(self.id).last() {
+        if let Some((imu,_)) = data.get_imu(self.id).last() {
             let q_raw = Quaternion::new(
                 imu.q_w as f64 / 16384.0,
                 imu.q_x as f64 / 16384.0,

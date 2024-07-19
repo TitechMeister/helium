@@ -13,7 +13,7 @@ impl AltitudeUI {
 impl AppUI for AltitudeUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
-            if let Some(alt_data) = data.get_ultra_sonic_data().last() {
+            if let Some((alt_data,_)) = data.get_ultra_sonic_data().last() {
                 ui.heading(format!(
                     "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
                     alt_data.altitude / 100.0,
@@ -22,10 +22,10 @@ impl AppUI for AltitudeUI {
             }
             
             let mut p0 = 101300.0;
-            if let Some(barometer_data) = data.get_barometer_data(1).last() {
+            if let Some((barometer_data,_)) = data.get_barometer_data(1).last() {
                 p0 = barometer_data.pressure;
 
-                if let Some(barometer_data0)= data.get_barometer_data(0).last(){
+                if let Some((barometer_data0,_))= data.get_barometer_data(0).last(){
                     ui.label(
                         format!(
                             "Pressure: {:2.2}Pa\tTemperature: {:2.2}C",
@@ -49,17 +49,17 @@ impl AppUI for AltitudeUI {
                         .get_ultra_sonic_data()
                         .iter()
                         .enumerate()
-                        .map(|(n, _data)| [n as f64, _data.altitude as f64 / 100.0])
+                        .map(|(n, (data,__time))| [n as f64, data.altitude as f64 / 100.0])
                         .collect();
 
                     let point_barometer: egui_plot::PlotPoints = data
                         .get_barometer_data(0)
                         .iter()
                         .enumerate()
-                        .map(|(n, _data)| {
+                        .map(|(n, (data,_))| {
                             [
                                 n as f64,
-                                44330.0 * (1.0 - (_data.pressure / p0).powf(1.0 / 5.255)) as f64,
+                                44330.0 * (1.0 - (data.pressure / p0).powf(1.0 / 5.255)) as f64,
                             ]
                         })
                         .collect();

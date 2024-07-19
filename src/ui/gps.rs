@@ -113,7 +113,7 @@ impl super::AppUI for Gps {
                 .resizable(false)
                 .default_width(400.0)
                 .show_inside(ui, |ui| {
-                    if let Some(gps_data) = data.get_gps_data().last() {
+                    if let Some((gps_data,_)) = data.get_gps_data().last() {
                         ui.label(format!("lon:\t{}", gps_data.longitude));
                         ui.label(format!("lat:\t{}", gps_data.latitude));
                         ui.add_space(10.0);
@@ -182,7 +182,7 @@ impl super::AppUI for Gps {
                 let point: egui_plot::PlotPoints = data
                     .get_gps_data()
                     .iter()
-                    .map(|gps_data| {
+                    .map(|(gps_data,_)| {
                         let (x, y) = self.gps2pixel(gps_data.latitude, gps_data.longitude);
                         [x as f64, y as f64]
                     })

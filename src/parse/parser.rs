@@ -7,12 +7,15 @@ use super::VaneData;
 
 
 
-fn parse_data<T>(data: &mut Vec<T>,decoded: &Vec<u8>)
+fn parse_data<T>(data: &mut Vec<(T,i64)>,decoded: &Vec<u8>,timestamp:i64)
 where T: Data+Debug+Copy+Clone{
+    if decoded.len() < T::get_size() {
+        return;
+    }
     for i in 0..decoded.len()/T::get_size(){
         let item = T::parse(&decoded[i*T::get_size()..(i+1)*T::get_size()].to_vec());
         println!("{:?}",item);
-        data.push(item);
+        data.push((item,timestamp));
     }
     if data.len() > 100 {
         *data = data[data.len()-100..].to_vec();
@@ -22,14 +25,14 @@ where T: Data+Debug+Copy+Clone{
 pub struct Parser {
     log: Vec<u8>,
     pub filename: String,
-    gps_data: Vec<GPSData>,
-    imu: [Vec<IMUData>;16],
-    servo_data: Vec<ServoData>,
-    alt_data: Vec<UltraSonicData>,
-    barometer_data: [Vec<BarometerData>;2],
-    pitot_data:Vec<PitotData>,
-    vane_data:Vec<VaneData>,
-    tac_data: [Vec<TachData>;2],
+    gps_data: Vec<(GPSData,i64)>,
+    imu: [Vec<(IMUData,i64)>;16],
+    servo_data: Vec<(ServoData,i64)>,
+    alt_data: Vec<(UltraSonicData,i64)>,
+    barometer_data: [Vec<(BarometerData,i64)>;2],
+    pitot_data:Vec<(PitotData,i64)>,
+    vane_data:Vec<(VaneData,i64)>,
+    tac_data: [Vec<(TachData,i64)>;2],
     port: Option<Box<dyn serialport::SerialPort>>,
 }
 
@@ -79,19 +82,19 @@ impl Parser {
         }
     }
 
-    pub fn get_imu(&self,id:u8) -> &Vec<IMUData> {
+    pub fn get_imu(&self,id:u8) -> &Vec<(IMUData,i64)> {
         &self.imu[(id&0x0f) as usize]
     }
 
-    pub fn get_servo_data(&self) -> &Vec<ServoData> {
+    pub fn get_servo_data(&self) -> &Vec<(ServoData,i64)> {
         &self.servo_data
     }
 
-    pub fn get_ultra_sonic_data(&self) -> &Vec<UltraSonicData> {
+    pub fn get_ultra_sonic_data(&self) -> &Vec<(UltraSonicData,i64)> {
         &self.alt_data
     }
 
-    pub fn get_barometer_data(&self,id:u8) -> &Vec<BarometerData> {
+    pub fn get_barometer_data(&self,id:u8) -> &Vec<(BarometerData,i64)> {
         if id==0{
             &self.barometer_data[0]
         }else{
@@ -99,18 +102,18 @@ impl Parser {
         }
     }
 
-    pub fn get_pitot_data(&self)->&Vec<PitotData>{
+    pub fn get_pitot_data(&self)->&Vec<(PitotData,i64)>{
         &self.pitot_data
     }
-    pub fn get_gps_data(&self) -> &Vec<GPSData> {
+    pub fn get_gps_data(&self) -> &Vec<(GPSData,i64)> {
         &self.gps_data
     }
 
-    pub fn get_vane_data(&self) -> &Vec<VaneData>{
+    pub fn get_vane_data(&self) -> &Vec<(VaneData,i64)>{
         &self.vane_data
     }
 
-    pub fn get_tach_data(&self,id:u8) -> &Vec<TachData> {
+    pub fn get_tach_data(&self,id:u8) -> &Vec<(TachData,i64)> {
         &self.tac_data[(id&0x01) as usize]
     }
 
@@ -141,35 +144,35 @@ impl Parser {
                         file.write_all(format!("{}:{:?}\n", timestamp,decoded).as_bytes()).unwrap();
                         match decoded[0] & 0xF0 {
                             0x10 => {
-                                parse_data(&mut self.servo_data,&decoded);
+                                parse_data(&mut self.servo_data,&decoded,timestamp);
                             }
                             0x20 => {
                                 if decoded[0] == 0x20 {
-                                    parse_data(&mut self.tac_data[0],&decoded);
+                                    parse_data(&mut self.tac_data[0],&decoded,timestamp);
                                 }else if decoded[0]==0x21 {
-                                    parse_data(&mut self.tac_data[1],&decoded);
+                                    parse_data(&mut self.tac_data[1],&decoded,timestamp);
                                 }
                             }
                             0x30 => {
-                                parse_data(&mut self.pitot_data,&decoded);
+                                parse_data(&mut self.pitot_data,&decoded,timestamp);
                             }
                             0x40 => {
-                                parse_data(&mut self.imu[(decoded[0] & 0x0f) as usize], &decoded);
+                                parse_data(&mut self.imu[(decoded[0] & 0x0f) as usize], &decoded,timestamp);
                             }
                             0x50 => {
-                                parse_data(&mut self.alt_data,&decoded);
+                                parse_data(&mut self.alt_data,&decoded,timestamp);
                             }
                             0x60 => {
-                                parse_data(&mut self.gps_data,&decoded);
+                                parse_data(&mut self.gps_data,&decoded,timestamp);
                             }
                             0x70 => {
-                                parse_data(&mut self.vane_data, &decoded);
+                                parse_data(&mut self.vane_data, &decoded,timestamp);
                             }
                             0x90 => {
                                 if decoded[0] == 0x90{
-                                    parse_data(&mut self.barometer_data[0], &decoded);
+                                    parse_data(&mut self.barometer_data[0], &decoded,timestamp);
                                 }else{
-                                    parse_data(&mut self.barometer_data[1], &decoded);
+                                    parse_data(&mut self.barometer_data[1], &decoded,timestamp);
                                 }
                             }
                             _ => (),
