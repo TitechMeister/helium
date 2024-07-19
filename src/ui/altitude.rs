@@ -13,32 +13,28 @@ impl AltitudeUI {
 impl AppUI for AltitudeUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         egui::Window::new("Altitude").vscroll(true).show(ctx, |ui| {
-            if let Some((alt_data,_)) = data.get_ultra_sonic_data().last() {
+            if let Some((alt_data, _)) = data.get_ultra_sonic_data().last() {
                 ui.heading(format!(
                     "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
                     alt_data.altitude / 100.0,
                     alt_data.timestamp
                 ));
             }
-            
+
             let mut p0 = 101300.0;
-            if let Some((barometer_data,_)) = data.get_barometer_data(1).last() {
+            if let Some((barometer_data, _)) = data.get_barometer_data(1).last() {
                 p0 = barometer_data.pressure;
 
-                if let Some((barometer_data0,_))= data.get_barometer_data(0).last(){
-                    ui.label(
-                        format!(
-                            "Pressure: {:2.2}Pa\tTemperature: {:2.2}C",
-                            barometer_data0.pressure, barometer_data0.temperature
-                        )
-                    );
-                    ui.heading(
-                        format!(
-                            "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
-                            44330.0 * (1.0 - (barometer_data0.pressure / p0).powf(1.0 / 5.255)),
-                            barometer_data0.timestamp
-                        )
-                    );
+                if let Some((barometer_data0, _)) = data.get_barometer_data(0).last() {
+                    ui.label(format!(
+                        "Pressure: {:2.2}Pa\tTemperature: {:2.2}C",
+                        barometer_data0.pressure, barometer_data0.temperature
+                    ));
+                    ui.heading(format!(
+                        "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
+                        44330.0 * (1.0 - (barometer_data0.pressure / p0).powf(1.0 / 5.255)),
+                        barometer_data0.timestamp
+                    ));
                 }
             }
 
@@ -49,18 +45,28 @@ impl AppUI for AltitudeUI {
                         .get_ultra_sonic_data()
                         .iter()
                         .enumerate()
-                        .map(|(n, (data,__time))| [n as f64, data.altitude as f64 / 100.0])
+                        .map(|(n, (data, __time))| [n as f64, data.altitude as f64 / 100.0])
                         .collect();
 
                     let point_barometer: egui_plot::PlotPoints = data
                         .get_barometer_data(0)
                         .iter()
                         .enumerate()
-                        .map(|(n, (data,_))| {
-                            [
-                                n as f64,
-                                44330.0 * (1.0 - (data.pressure / p0).powf(1.0 / 5.255)) as f64,
-                            ]
+                        .map(|(n, (baro0_data, baro0_time))| {
+                            if let Some((baro1_data, _)) = data
+                                .get_barometer_data(1)
+                                .iter()
+                                .rfind(|(_, baro1_time)| baro1_time <= baro0_time)
+                            {
+                                [
+                                    n as f64,
+                                    44330.0
+                                        * (1.0 - (baro0_data.pressure / baro1_data.pressure).powf(1.0 / 5.255))
+                                            as f64,
+                                ]
+                            }else{
+                                [n as f64, 44330.0 * (1.0 - (baro0_data.pressure / p0).powf(1.0 / 5.255)) as f64]
+                            }
                         })
                         .collect();
 
