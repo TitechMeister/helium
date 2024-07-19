@@ -43,6 +43,7 @@ impl AppUI for AltitudeUI {
             }
 
             egui_plot::Plot::new("Altitude")
+                .legend(egui_plot::Legend::default())
                 .show(ui, |plt_ui| {
                     let point_ultra_sonic: egui_plot::PlotPoints = data
                         .get_ultra_sonic_data()
