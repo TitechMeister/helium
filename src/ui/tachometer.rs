@@ -31,7 +31,7 @@ impl AppUI for TachUI {
                                     [theta.cos(), theta.sin()]
                                 })
                                 .collect();
-                            let theta = (tach_data.cadence as f64 / 180.0) * PI;
+                            let theta = (1.0-tach_data.cadence as f64 / 180.0) * PI;
 
                             plot_ui.line(
                                 Line::new(circle_points).color(Color32::from_rgb(127, 127, 127)),
