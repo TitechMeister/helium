@@ -9,7 +9,6 @@ use eframe::egui::{self, FontData, FontDefinitions, FontFamily, IconData};
 use log::info;
 use serialport::available_ports;
 use ui::{
-    AppUI,
     altitude::AltitudeUI,
     // flight_menu::FlightMenu,
     gps::Gps,
@@ -17,7 +16,8 @@ use ui::{
     pitot::PitotUI,
     servo::ServoUI,
     tachometer::TachUI,
-    vane::VaneUI
+    vane::VaneUI,
+    AppUI,
 };
 
 use crate::parse::Parser;
@@ -35,7 +35,7 @@ fn main() -> Result<(), eframe::Error> {
     eframe::run_native(
         "Meister App",
         options,
-        Box::new(|cc|{ 
+        Box::new(|cc| {
             egui_extras::install_image_loaders(&cc.egui_ctx);
             Box::<MeisterApp>::default()
         }),
@@ -74,6 +74,7 @@ impl Default for MeisterApp {
             servo: ServoUI::new(),
             tach: TachUI::new(),
             vane: VaneUI::new(),
+
             // menu: FlightMenu::new(),
         }
     }
@@ -102,7 +103,7 @@ impl eframe::App for MeisterApp {
         self.parser.parse();
         egui::CentralPanel::default().show(ctx, |ui| {
             ctx.request_repaint_after(std::time::Duration::from_millis(25));
-            
+
             // self.menu.update(&mut self.parser, ctx);
 
             match self.parser.get_port() {
@@ -125,6 +126,114 @@ impl eframe::App for MeisterApp {
                     self.tach.update(&mut self.parser, ctx);
                     self.vane.update(&mut self.parser, ctx);
 
+                    // 生存確認
+                    let t = chrono::Utc::now().timestamp_millis();
+
+                    if let Some((_, timestamp)) = self.parser.get_servo_data().last() {
+                        if t < (*timestamp + 1000) {
+                            ui.colored_label(egui::Color32::GREEN , "0x10:Servo");
+                        } else {
+                            ui.colored_label(egui::Color32::RED, "0x10:Servo");
+                        }
+                    }
+                    ui.horizontal(|ui| {
+                        if let Some((_, timestamp)) = self.parser.get_tach_data(0).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x20:Thrust");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x20:Thrust");
+                            }
+                        }
+                        if let Some((_, timestamp)) = self.parser.get_tach_data(1).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x21:Tachometer");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x21:Tachometer");
+                            }
+                        }
+                    });
+                    if let Some((pitot, timestamp)) = self.parser.get_pitot_data().last() {
+                        if t < *timestamp + 1000 {
+                            ui.colored_label(egui::Color32::GREEN , format!("0x{:02x}:Pitot", pitot.id));
+                        } else {
+                            ui.colored_label(egui::Color32::RED, format!("0x{:02x}:Pitot", pitot.id));
+                        }
+                    }
+
+                    ui.horizontal(|ui| {
+                        if let Some((_, timestamp)) = self.parser.get_imu(0).last() {
+                            if t < (*timestamp + 1000) {
+                                ui.colored_label(egui::Color32::GREEN , "0x40:IMU(B)");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x40:IMU(B)");
+                            }
+                        }
+                        if let Some((_, timestamp)) = self.parser.get_imu(1).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x41:IMU(L)");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x41:IMU(L)");
+                            }
+                        }
+                        if let Some((_, timestamp)) = self.parser.get_imu(2).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x42:IMU(R)");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x42:IMU(R)");
+                            }
+                        }
+                        if let Some((_, timestamp)) = self.parser.get_imu(3).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x43:IMU(A)");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x43:IMU(A)");
+                            }
+                        }
+                    });
+
+                    if let Some((alt, timestamp)) = self.parser.get_ultra_sonic_data().last() {
+                        if t < *timestamp + 1000 {
+                            ui.colored_label(egui::Color32::GREEN , format!("0x{:02x}:UltraSonic", alt.id));
+                        } else {
+                            ui.colored_label(
+                                egui::Color32::RED,
+                                format!("0x{:02x}:UltraSonic", alt.id),
+                            );
+                        }
+                    }
+
+                    if let Some((gps, timestamp)) = self.parser.get_gps_data().last() {
+                        if t < *timestamp + 3000 {
+                            ui.colored_label(egui::Color32::GREEN , format!("0x{:02x}:GPS", gps.id));
+                        } else {
+                            ui.colored_label(egui::Color32::RED, format!("0x{:02x}:GPS", gps.id));
+                        }
+                    }
+
+                    if let Some((vane, timestamp)) = self.parser.get_vane_data().last() {
+                        if t < *timestamp + 1000 {
+                            ui.colored_label(egui::Color32::GREEN , format!("0x{:02x}:Vane", vane.id));
+                        } else {
+                            ui.colored_label(egui::Color32::RED, format!("0x{:02x}:Vane", vane.id));
+                        }
+                    }
+
+                    ui.horizontal(|ui| {
+                        if let Some((_, timestamp)) = self.parser.get_barometer_data(0).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x90:Barometer (On-board)");
+                            } else {
+                                ui.colored_label(egui::Color32::RED, "0x90:Barometer (On-board)");
+                            }
+                        }
+                        if let Some((_, timestamp)) = self.parser.get_barometer_data(1).last() {
+                            if t < *timestamp + 1000 {
+                                ui.colored_label(egui::Color32::GREEN , "0x91:Barometer (ground)");
+                            } else {
+                                ui.colored_label(egui::Color32::GREEN , "0x91:Barometer (ground)");
+                            }
+                        }
+                    });
                 }
                 None => {
                     ui.horizontal(|ui| match available_ports() {
