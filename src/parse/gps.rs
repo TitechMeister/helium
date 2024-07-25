@@ -15,8 +15,8 @@ impl Data for GPSData{
         GPSData{
             id: data[0],
             timestamp: BigEndian::read_u32(&data[4..8]),
-            longitude: BigEndian::read_f64(&data[8..16]),
-            latitude: BigEndian::read_f64(&data[16..24])
+            longitude: BigEndian::read_f64(&data[16..24]),
+            latitude: BigEndian::read_f64(&data[8..16])
         }
     }
     fn get_size() -> usize {

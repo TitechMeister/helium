@@ -16,7 +16,7 @@ impl AppUI for AltitudeUI {
             if let Some((alt_data, _)) = data.get_ultra_sonic_data().last() {
                 ui.heading(format!(
                     "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
-                    alt_data.altitude / 100.0,
+                    alt_data.altitude,
                     alt_data.timestamp
                 ));
             }
@@ -45,7 +45,7 @@ impl AppUI for AltitudeUI {
                         .get_ultra_sonic_data()
                         .iter()
                         .enumerate()
-                        .map(|(n, (data, __time))| [n as f64, data.altitude as f64 / 100.0])
+                        .map(|(n, (data, __time))| [n as f64, data.altitude as f64])
                         .collect();
 
                     let point_barometer: egui_plot::PlotPoints = data
