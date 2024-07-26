@@ -101,7 +101,7 @@ impl super::AppUI for Gps {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         // let platform_pos = (35.294230, 136.254344);
         let chikubushima_pos = (35.416626, 136.124324);
-        let okishima_pos = (35.250789, 136.063712);
+        let okishima_pos = (35.258477, 136.061343);
         let mid_pos = (35.340891, 136.064750);
         let pylon1km_pos = (35.296822, 136.243811);
 
