@@ -10,6 +10,14 @@ impl PitotUI {
 
 impl super::AppUI for PitotUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
+        if let Some((pitot_data, _)) = data.get_pitot1_data().last() {
+            egui::Window::new("Pitot1").vscroll(true).show(ctx, |ui| {
+                ui.heading(format!(
+                    "IAS:\t{:2.2}m/s\ttimestamp:\t{}ms",
+                    pitot_data.velocity, pitot_data.timestamp
+                ));
+            });
+        }
         if let Some((pitot_data, _)) = data.get_pitot_data().last() {
             egui::Window::new("Pitot").vscroll(true).show(ctx, |ui| {
                 ui.heading(format!(
@@ -27,7 +35,7 @@ impl super::AppUI for PitotUI {
                                 .collect();
 
                             let point_cas: egui_plot::PlotPoints = data
-                                .get_pitot_data()
+                                .get_pitot_data()[data.get_pitot_data().len() - 100..]
                                 .iter()
                                 .map(|(pitot_data, pitot_timestamp)| {
                                     let c3 = 2.0e-5;

@@ -18,6 +18,7 @@ use ui::{
     tachometer::TachUI,
     vane::VaneUI,
     AppUI,
+    power_est::PowerEstimaterUI
 };
 
 use crate::parse::Parser;
@@ -54,6 +55,8 @@ struct MeisterApp {
     tach: TachUI,
     vane: VaneUI,
 
+    pwrest: PowerEstimaterUI
+
     // menu: FlightMenu,
 }
 
@@ -74,6 +77,8 @@ impl Default for MeisterApp {
             servo: ServoUI::new(),
             tach: TachUI::new(),
             vane: VaneUI::new(),
+
+            pwrest: PowerEstimaterUI::new()
 
             // menu: FlightMenu::new(),
         }
@@ -125,6 +130,8 @@ impl eframe::App for MeisterApp {
                     self.servo.update(&mut self.parser, ctx);
                     self.tach.update(&mut self.parser, ctx);
                     self.vane.update(&mut self.parser, ctx);
+
+                    self.pwrest.update(&mut self.parser, ctx);
 
                     // 生存確認
                     let t = chrono::Utc::now().timestamp_millis();

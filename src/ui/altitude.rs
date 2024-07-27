@@ -4,15 +4,11 @@ use eframe::egui;
 
 pub struct AltitudeUI {
     offset: f32,
-    raw_alt: f32,
 }
 
 impl AltitudeUI {
     pub fn new() -> Self {
-        Self {
-            offset: -1.2,
-            raw_alt: 0.0,
-        }
+        Self { offset: -1.2 }
     }
 }
 
@@ -27,13 +23,20 @@ impl AppUI for AltitudeUI {
                     //  uint8_t id;
                     //  float diff_alt_from_10;
                     // }
-                    ui.add(egui::DragValue::new(&mut self.raw_alt));
-                    if ui.button("Send diff altidude from 10m").clicked() {
-                        let mut bytes: [u8; 8] = [0; 8];
-                        bytes[0] = 0xD5; // message id
-                        BigEndian::write_f32(&mut bytes[4..8], self.raw_alt - 10.0);
-                        data.write(&bytes.to_vec());
-                        self.offset = -self.raw_alt + 10.0;
+
+                    if let Some((barometer_data, _)) = data.get_barometer_data(1).last() {
+                        let p0 = barometer_data.pressure;
+
+                        if let Some((barometer_data0, _)) = data.get_barometer_data(0).last() {
+                            if ui.button("Send diff altidude from 10m").clicked() {
+                                let mut bytes: [u8; 8] = [0; 8];
+                                bytes[0] = 0xD5; // message id
+                                let raw_alt=44330.0 * (1.0 - (barometer_data0.pressure / p0).powf(1.0 / 5.255));
+                                BigEndian::write_f32(&mut bytes[4..8], raw_alt - 10.0);
+                                data.write(&bytes.to_vec());
+                                self.offset = -raw_alt + 10.0;
+                            }
+                        }
                     }
                 });
             egui::CentralPanel::default().show_inside(ui, |ui| {
@@ -55,12 +58,12 @@ impl AppUI for AltitudeUI {
                         ));
                         ui.heading(format!(
                             "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
-                            44330.0 * (1.0 - (barometer_data0.pressure / p0).powf(1.0 / 5.255)),
+                            44330.0 * (1.0 - (barometer_data0.pressure / p0).powf(1.0 / 5.255)) +self.offset,
                             barometer_data0.timestamp
                         ));
                     }
                 }
-
+                
                 egui_plot::Plot::new("Altitude")
                     .legend(egui_plot::Legend::default())
                     .show(ui, |plt_ui| {
@@ -80,7 +83,7 @@ impl AppUI for AltitudeUI {
                         }
                         if data.get_barometer_data(0).len() > 100 {
                             let point_barometer: egui_plot::PlotPoints = data
-                                .get_barometer_data(0)
+                                .get_barometer_data(0)[data.get_barometer_data(1).len() - 100..]
                                 .iter()
                                 .map(|(baro0_data, baro0_time)| {
                                     if let Some((baro1_data, _)) = data
@@ -94,7 +97,8 @@ impl AppUI for AltitudeUI {
                                                 * (1.0
                                                     - (baro0_data.pressure / baro1_data.pressure)
                                                         .powf(1.0 / 5.255))
-                                                    as f64,
+                                                    as f64
+                                            + (self.offset as f64),
                                         ]
                                     } else {
                                         [

@@ -1,5 +1,6 @@
 use std::fs::OpenOptions;
 use std::io::prelude::*;
+
 use crate::parse::{decode_cobs, UltraSonicData,BarometerData,GPSData, Data, IMUData, ServoData,PitotData,TachData};
 use std::fmt::Debug;
 
@@ -34,6 +35,7 @@ pub struct Parser {
     alt_data: Vec<(UltraSonicData,i64)>,
     barometer_data: [Vec<(BarometerData,i64)>;2],
     pitot_data:Vec<(PitotData,i64)>,
+    pitot1_data:Vec<(PitotData,i64)>,
     vane_data:Vec<(VaneData,i64)>,
     tac_data: [Vec<(TachData,i64)>;2],
     port: Option<Box<dyn serialport::SerialPort>>,
@@ -53,6 +55,7 @@ impl Parser {
             alt_data: Vec::new(),
             barometer_data: [Vec::new(),Vec::new()],
             pitot_data:Vec::new(),
+            pitot1_data: Vec::new(),
             gps_data: Vec::new(),
             vane_data: Vec::new(),
             tac_data: [Vec::new(),Vec::new()],
@@ -108,6 +111,10 @@ impl Parser {
     pub fn get_pitot_data(&self)->&Vec<(PitotData,i64)>{
         &self.pitot_data
     }
+
+    pub fn get_pitot1_data(&self)->&Vec<(PitotData,i64)>{
+        &self.pitot_data
+    }
     pub fn get_gps_data(&self) -> &Vec<(GPSData,i64)> {
         &self.gps_data
     }
@@ -157,7 +164,11 @@ impl Parser {
                                 }
                             }
                             0x30 => {
-                                parse_data(&mut self.pitot_data,&decoded,timestamp);
+                                if decoded[0]==0x31{
+                                    parse_data(&mut self.pitot_data,&decoded,timestamp);
+                                }else{
+                                    parse_data(&mut self.pitot1_data,&decoded,timestamp);
+                                }
                             }
                             0x40 => {
                                 parse_data(&mut self.imu[(decoded[0] & 0x0f) as usize], &decoded,timestamp);
