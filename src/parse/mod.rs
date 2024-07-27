@@ -25,5 +25,6 @@ pub use parser::Parser;
 pub trait Data{
     fn parse(data: &Vec<u8>) -> Self;
     fn get_size() -> usize;
+    fn get_buf_size() -> usize;
 }
 

@@ -17,8 +17,11 @@ where T: Data+Debug+Copy+Clone{
         println!("{:?}",item);
         data.push((item,timestamp));
     }
-    if data.len() > 100 {
-        *data = data[data.len()-100..].to_vec();
+    if T::get_buf_size() == 0 {
+        return;
+    }
+    if data.len() > T::get_buf_size() {
+        *data = data[data.len()-T::get_buf_size()..].to_vec();
     }
 }
 

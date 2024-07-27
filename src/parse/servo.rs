@@ -32,4 +32,7 @@ impl Data for ServoData{
     fn get_size() -> usize {
         33
     }
+    fn get_buf_size() -> usize {
+        0
+    }
 }

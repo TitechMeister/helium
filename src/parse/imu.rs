@@ -30,4 +30,7 @@ impl Data for IMUData{
     fn get_size() -> usize {
         86
     }
+    fn get_buf_size() -> usize {
+        100
+    }
 }

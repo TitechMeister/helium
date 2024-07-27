@@ -20,4 +20,7 @@ impl Data for UltraSonicData{
     fn get_size() -> usize {
         12
     }
+    fn get_buf_size() -> usize {
+        0
+    }
 }

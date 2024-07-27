@@ -7,7 +7,7 @@ pub struct TachData{
     pub id: u8,
     pub timestamp: u32,
     pub cadence:f32,
-    pub power:f32
+    pub strain:f32
 }
 
 impl Data for TachData{
@@ -16,10 +16,13 @@ impl Data for TachData{
             id: data[0],
             timestamp: BigEndian::read_u32(&data[4..8]),
             cadence: BigEndian::read_f32(&data[12..16]),
-            power: BigEndian::read_f32(&data[8..12]),
+            strain: BigEndian::read_f32(&data[8..12]),
         }
     }
     fn get_size() -> usize {
         16
+    }
+    fn get_buf_size() -> usize {
+        0
     }
 }

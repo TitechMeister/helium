@@ -22,4 +22,7 @@ impl Data for GPSData{
     fn get_size() -> usize {
         24
     }
+    fn get_buf_size() -> usize {
+        0
+    }
 }

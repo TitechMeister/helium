@@ -24,4 +24,7 @@ impl Data for PitotData{
     fn get_size() -> usize {
         20
     }
+    fn get_buf_size() -> usize {
+        0
+    }
 }

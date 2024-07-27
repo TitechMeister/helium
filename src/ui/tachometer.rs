@@ -5,11 +5,15 @@ use egui_plot::{Line, PlotPoints};
 
 use super::AppUI;
 
-pub struct TachUI {}
+pub struct TachUI {
+    offset: f32,
+}
 
 impl TachUI {
     pub fn new() -> Self {
-        Self {}
+        Self {
+            offset: 0.0,
+        }
     }
 }
 
@@ -20,8 +24,17 @@ impl AppUI for TachUI {
             .show(ctx, |ui| {
                 if let Some((tach_data,_)) = data.get_tach_data(1).last() {
                     ui.heading(format!("Cadence:\t{}", tach_data.cadence));
+                    // ui.heading(format!("Strain:\t{}"));
+                    if data.get_tach_data(1).len() >= 10{
+                        ui.label(format!("Strain:\t{}", tach_data.strain - self.offset));
+                    } else {
+                        ui.label("Strain:\tN/A");
+                    }
                     ui.add_space(10.0);
                     ui.label(format!("timestamp:\t{}ms", tach_data.timestamp));
+                    if ui.button("Set offset").clicked() {
+                        self.offset = tach_data.strain;
+                    }
                     egui_plot::Plot::new("tach_plot")
                         .data_aspect(1.0)
                         .show(ui, |plot_ui| {

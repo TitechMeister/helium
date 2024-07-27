@@ -22,15 +22,13 @@ impl super::AppUI for PitotUI {
                         let point_ias: egui_plot::PlotPoints = data
                             .get_pitot_data()
                             .iter()
-                            .enumerate()
-                            .map(|(n, (_data, _))| [n as f64, _data.velocity as f64])
+                            .map(|(_data, utc)| [*utc as f64, _data.velocity as f64])
                             .collect();
 
                         let point_cas: egui_plot::PlotPoints = data
                             .get_pitot_data()
                             .iter()
-                            .enumerate()
-                            .map(|(n, (pitot_data, pitot_timestamp))| {
+                            .map(|(pitot_data, pitot_timestamp)| {
 
                                 let c3 = 2.0e-5;
                                 let c2 = 0.0032;
@@ -49,7 +47,7 @@ impl super::AppUI for PitotUI {
                                         + c2 * vane_data.angle * vane_data.angle
                                         + c3 * vane_data.angle * vane_data.angle * vane_data.angle;
                                 }
-                                [n as f64, (c * pitot_data.velocity) as f64]
+                                [*pitot_timestamp as f64, (c * pitot_data.velocity) as f64]
                             })
                             .collect();
                         plt_ui.line(

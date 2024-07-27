@@ -23,4 +23,7 @@ impl Data for BarometerData{
     fn get_size() -> usize {
         16
     }
+    fn get_buf_size() -> usize {
+        0
+    }
 }
