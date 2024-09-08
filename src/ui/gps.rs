@@ -79,7 +79,7 @@ impl Gps {
         let y = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
             * (-lat.to_radians().sin().atanh() + 85.05112878_f64.to_radians().sin().atanh()))
             as i64;
-        (x, y)
+        (x-self.map_x*256, -(y-self.map_y*256))
     }
     /// ピクセル座標をGPS座標に変換
     fn pixel2gps(&self, x: i64, y: i64) -> (f64, f64) {
@@ -232,13 +232,13 @@ impl super::AppUI for Gps {
                     }
                     plot_ui.line(line);
                     plot_ui.hline(
-                        egui_plot::HLine::new(-((y - 256 * self.map_y) as f64))
+                        egui_plot::HLine::new(y as f64)
                             .color(egui::Color32::from_rgb(255, 0, 255))
                             .name("current")
                             .width(0.5),
                     );
                     plot_ui.vline(
-                        egui_plot::VLine::new((x - 256 * self.map_x) as f64)
+                        egui_plot::VLine::new(x as f64)
                             .color(egui::Color32::from_rgb(255, 0, 255))
                             .name("current")
                             .width(0.5),
@@ -266,9 +266,9 @@ impl super::AppUI for Gps {
                                 .map(|i| {
                                     let theta = TAU / 512.0 * i as f64;
                                     [
-                                        ((pylon1km_x - self.map_x * 256) as f64)
+                                        pylon1km_x as f64
                                             + radius * theta.cos(),
-                                        -(pylon1km_y - self.map_y * 256) as f64
+                                        pylon1km_y as f64
                                             + radius * theta.sin(),
                                     ]
                                 })
@@ -286,9 +286,9 @@ impl super::AppUI for Gps {
                                 .map(|i| {
                                     let theta = TAU / 512.0 * i as f64;
                                     [
-                                        ((chikubushima_x - self.map_x * 256) as f64)
+                                        chikubushima_x as f64
                                             + radius * theta.cos(),
-                                        -(chikubushima_y - self.map_y * 256) as f64
+                                        chikubushima_y as f64
                                             + radius * theta.sin(),
                                     ]
                                 })
@@ -305,9 +305,9 @@ impl super::AppUI for Gps {
                                 .map(|i| {
                                     let theta = TAU / 512.0 * i as f64;
                                     [
-                                        ((okishima_x - self.map_x * 256) as f64)
+                                        okishima_x as f64
                                             + radius * theta.cos(),
-                                        -(okishima_y - self.map_y * 256) as f64
+                                        okishima_y as f64
                                             + radius * theta.sin(),
                                     ]
                                 })
@@ -321,12 +321,12 @@ impl super::AppUI for Gps {
                     plot_ui.line(
                         egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
                             [
-                                ((mid_x - self.map_x * 256) as f64),
-                                -((mid_y - self.map_y * 256) as f64),
+                                mid_x as f64,
+                                mid_y as f64,
                             ],
                             [
-                                ((pylon1km_x - self.map_x * 256) as f64),
-                                -(pylon1km_y - self.map_y * 256) as f64,
+                                pylon1km_x as f64,
+                                pylon1km_y as f64,
                             ],
                         ]))
                         .width(1.0),
@@ -339,12 +339,12 @@ impl super::AppUI for Gps {
                         plot_ui.line(
                             egui_plot::Line::new(egui_plot::PlotPoints::new(vec![
                                 [
-                                    ((x - self.map_x * 256) as f64),
-                                    -((y - 256 * self.map_y) as f64),
+                                    x as f64,
+                                    y as f64,
                                 ],
                                 [
-                                    ((gx - self.map_x * 256) as f64),
-                                    -((gy - self.map_y * 256) as f64),
+                                    gx as f64,
+                                    gy as f64,
                                 ],
                             ]))
                             .color(egui::Color32::RED)
@@ -353,8 +353,8 @@ impl super::AppUI for Gps {
 
                         plot_ui.add(
                             egui_plot::Points::new(vec![[
-                                (gx - self.map_x * 256) as f64,
-                                -(gy - self.map_y * 256) as f64,
+                                gx as f64,
+                                gy as f64,
                             ]])
                             .color(egui::Color32::from_rgb(255, 0, 0))
                             .name("Goal")
@@ -367,7 +367,7 @@ impl super::AppUI for Gps {
                         (0..=10)
                             .map(|i| {
                                 let x = (i as f64 - 5.0) * 256.0 + (x - self.map_x * 256) as f64;
-                                [x, -((y - self.map_y * 256) as f64)]
+                                [x, y as f64]
                             })
                             .collect(),
                     )));
@@ -379,12 +379,12 @@ impl super::AppUI for Gps {
                     if self.is_tracking {
                         plot_ui.set_plot_bounds(egui_plot::PlotBounds::from_min_max(
                             [
-                                (x - self.map_x * 256) as f64 - self.area_size,
-                                -(y - self.map_y * 256) as f64 - self.area_size,
+                                x as f64 - self.area_size,
+                                y as f64 - self.area_size,
                             ],
                             [
-                                (x - self.map_x * 256) as f64 + self.area_size,
-                                -(y - self.map_y * 256) as f64 + self.area_size,
+                                x as f64 + self.area_size,
+                                y as f64 + self.area_size,
                             ],
                         ));
                     }
