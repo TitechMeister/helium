@@ -73,22 +73,21 @@ impl Gps {
         }
     }
     /// GPS座標をピクセル座標に変換
-    fn gps2pixel(&self, lat: f64, lon: f64) -> (i64, i64) {
+    fn gps2pixel(&self, lat: f64, lon: f64) -> (f64, f64) {
         // https://www.trail-note.net/tech/coordinate/
-        let x = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) * (lon / 180.0 + 1.0)) as i64;
-        let y = ((2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
-            * (-lat.to_radians().sin().atanh() + 85.05112878_f64.to_radians().sin().atanh()))
-            as i64;
-        (x-self.map_x*256, -(y-self.map_y*256))
+        let x = (2.0_f64.powf(self.zoom_level as f64 + 7.0)) * (lon / 180.0 + 1.0);
+        let y = (2.0_f64.powf(self.zoom_level as f64 + 7.0)) / PI
+            * (-lat.to_radians().sin().atanh() + 85.05112878_f64.to_radians().sin().atanh());
+        (x-(self.map_x*256) as f64, -(y-(self.map_y*256) as f64))
     }
     /// ピクセル座標をGPS座標に変換
-    fn pixel2gps(&self, x: i64, y: i64) -> (f64, f64) {
+    fn pixel2gps(&self, x: f64, y: f64) -> (f64, f64) {
         // https://www.trail-note.net/tech/coordinate/
         let lon = 180.0
-            * ((x as f64 + 256.0 * self.map_x as f64) / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
+            * ((x + 256.0 * self.map_x as f64) / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
                 - 1.0);
         let lat = 180.0 / PI
-            * ((-PI * (-y as f64 + 256.0 * self.map_y as f64)
+            * ((-PI * (-y + 256.0 * self.map_y as f64)
                 / 2.0_f64.powf(self.zoom_level as f64 + 7.0)
                 + 85.05112878_f64.to_radians().sin().atanh())
             .tanh())
@@ -122,7 +121,7 @@ impl super::AppUI for Gps {
                     if let Some(pos) = self.pos {
                         // https://www.trail-note.net/tech/coordinate/
 
-                        let (pos_lat, pos_lon) = self.pixel2gps(pos.0 as i64, pos.1 as i64);
+                        let (pos_lat, pos_lon) = self.pixel2gps(pos.0, pos.1);
 
                         // 目的地の設定
                         if ui.button("Set Goal").clicked() {
@@ -202,7 +201,7 @@ impl super::AppUI for Gps {
                     })
                     .collect();
                 let line = egui_plot::Line::new(point)
-                    .color(egui::Color32::from_rgb(0, 0, 0))
+                    .color(egui::Color32::from_rgb(0xff, 0x70, 0x00))
                     .name("path");
 
                 // タイルマップを表示
@@ -366,7 +365,7 @@ impl super::AppUI for Gps {
                     plot_ui.line(egui_plot::Line::new(egui_plot::PlotPoints::new(
                         (0..=10)
                             .map(|i| {
-                                let x = (i as f64 - 5.0) * 256.0 + (x - self.map_x * 256) as f64;
+                                let x = (i as f64 - 5.0) * 256.0 + x - (self.map_x * 256) as f64;
                                 [x, y as f64]
                             })
                             .collect(),
