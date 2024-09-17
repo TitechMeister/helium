@@ -1825,7 +1825,7 @@ checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
 
 [[package]]
 name = "helium"
-version = "0.4.0"
+version = "0.3.0"
 dependencies = [
  "byteorder",
  "chrono",
@@ -3365,9 +3365,9 @@ dependencies = [
 
 [[package]]
 name = "serialport"
-version = "4.5.0"
+version = "4.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "241ebb629ed9bf598b2b392ba42aa429f9ef2a0099001246a36ac4c084ee183f"
+checksum = "de7c4f0cce25b9b3518eea99618112f9ee4549f974480c8f43d3c06f03c131a0"
 dependencies = [
  "bitflags 2.6.0",
  "cfg-if",
@@ -3376,6 +3376,7 @@ dependencies = [
  "libudev",
  "mach2",
  "nix",
+ "regex",
  "scopeguard",
  "unescaper",
  "winapi",
