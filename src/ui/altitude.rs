@@ -42,8 +42,8 @@ impl AppUI for AltitudeUI {
             egui::CentralPanel::default().show_inside(ui, |ui| {
                 if let Some((alt_data, _)) = data.get_ultra_sonic_data().last() {
                     ui.heading(format!(
-                        "altitude:\t{:2.2}m\ttimestamp:\t{}ms",
-                        alt_data.altitude, alt_data.timestamp
+                        "altitude:\t{:2.2}m\ttimestamp:\t{}ms\ttemperature:\t{:2.2}C",
+                        alt_data.altitude, alt_data.timestamp, alt_data.temperature
                     ));
                 }
 

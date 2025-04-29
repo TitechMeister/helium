@@ -37,13 +37,89 @@ impl AppUI for ServoUI {
                         Color32::RED);
                 });
 
+                egui::CentralPanel::default().show_inside(ui, |ui| {
+
+                    egui_plot::Plot::new("servo")
+                    .legend(egui_plot::Legend::default())
+                    .show(ui, |plot_ui| {
+
+                        if data.get_servo_data().len() > 100 {
+                            let point_servo: egui_plot::PlotPoints = data
+                                .get_servo_data()[data.get_servo_data().len() - 100..]
+                                .iter()
+                                .map(|(data, time)| [*time as f64, data.rudder as f64])
+                                .collect();
+
+                            plot_ui.line(
+                                egui_plot::Line::new(point_servo)
+                                    .color(egui::Color32::from_rgb(0, 0, 255))
+                                    .name("rudder goal")
+                                    .fill(0.0),
+                            );
+                        }
+
+                        if data.get_servo_data().len() > 100 {
+                            let point_servo: egui_plot::PlotPoints = data
+                                .get_servo_data()[data.get_servo_data().len() - 100..]
+                                .iter()
+                                .map(|(data, time)| [*time as f64, data.position_rudder as f64])
+                                .collect();
+
+                            plot_ui.line(
+                                egui_plot::Line::new(point_servo)
+                                    .color(egui::Color32::from_rgb(0, 0, 127))
+                                    .name("rudder position")
+                                    .fill(0.0),
+                            );
+                        }
+
+                        if data.get_servo_data().len() > 100 {
+                            let point_servo: egui_plot::PlotPoints = data
+                                .get_servo_data()[data.get_servo_data().len() - 100..]
+                                .iter()
+                                .map(|(data, time)| [*time as f64, data.elevator as f64])
+                                .collect();
+
+                            plot_ui.line(
+                                egui_plot::Line::new(point_servo)
+                                    .color(egui::Color32::from_rgb(255, 0, 0))
+                                    .name("elevator goal")
+                                    .fill(0.0),
+                            );
+                        }
+                        if data.get_servo_data().len() > 100 {
+                            let point_servo: egui_plot::PlotPoints = data
+                                .get_servo_data()[data.get_servo_data().len() - 100..]
+                                .iter()
+                                .map(|(data, time)| [*time as f64, data.position_elevator as f64])
+                                .collect();
+
+                            plot_ui.line(
+                                egui_plot::Line::new(point_servo)
+                                    .color(egui::Color32::from_rgb(127, 0, 0))
+                                    .name("elevator position")
+                                    .fill(0.0),
+                            );
+                        }
+                    });
+
+                });
+
                 ui.add(
                     eframe::egui::widgets::ProgressBar::new(servo_data.rudder / 40.0 + 0.5)
                         .text(format!("rudder:\t{:2.2}deg", servo_data.rudder)),
                 );
                 ui.add(
+                    eframe::egui::widgets::ProgressBar::new(servo_data.position_rudder / 40.0 + 0.5)
+                        .text(format!("pos_rudder:\t{:2.2}deg", servo_data.position_rudder)),
+                );
+                ui.add(
                     eframe::egui::widgets::ProgressBar::new(servo_data.elevator / 40.0 + 0.5)
                         .text(format!("elevator:\t{:2.2}deg", servo_data.elevator)),
+                );
+                ui.add(
+                    eframe::egui::widgets::ProgressBar::new(servo_data.position_elevator / 40.0 + 0.5)
+                        .text(format!("pos_elevator:\t{:2.2}deg", servo_data.position_elevator)),
                 );
 
                 ui.add(
@@ -70,11 +146,29 @@ impl AppUI for ServoUI {
                 );
                 ui.add(
                     eframe::egui::widgets::ProgressBar::new(
+                        servo_data.temperature_rudder / 100.0 + 0.5,
+                    )
+                    .text(format!(
+                        "t_rudder:\t{:4.2}°C",
+                        servo_data.temperature_rudder
+                    )),
+                );
+                ui.add(
+                    eframe::egui::widgets::ProgressBar::new(
                         servo_data.current_elevator / 2000.0 + 0.5,
                     )
                     .text(format!(
                         "i_elevator:\t{:4.2}mA",
                         servo_data.current_elevator
+                    )),
+                );
+                ui.add(
+                    eframe::egui::widgets::ProgressBar::new(
+                        servo_data.temperature_elevator / 100.0 + 0.5,
+                    )
+                    .text(format!(
+                        "t_elevator:\t{:4.2}°C",
+                        servo_data.temperature_elevator
                     )),
                 );
                 ui.heading(format!("status:\t{}", servo_data.status));

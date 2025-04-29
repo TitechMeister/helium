@@ -13,6 +13,10 @@ pub struct ServoData{
     pub current_elevator:f32,
     pub trim:f32,
     pub status:u8,
+    pub position_rudder:f32,
+    pub position_elevator:f32,
+    pub temperature_rudder:f32,
+    pub temperature_elevator:f32,
 }
 
 impl Data for ServoData{
@@ -27,10 +31,14 @@ impl Data for ServoData{
             current_elevator: BigEndian::read_f32(&data[24..28]),
             trim: BigEndian::read_f32(&data[28..32]),
             status: data[32],
+            position_rudder: BigEndian::read_f32(&data[33..37]),
+            position_elevator: BigEndian::read_f32(&data[37..41]),
+            temperature_rudder: BigEndian::read_f32(&data[41..45]),
+            temperature_elevator: BigEndian::read_f32(&data[45..49]),
         }
     }
     fn get_size() -> usize {
-        33
+        49
     }
     fn get_buf_size() -> usize {
         0

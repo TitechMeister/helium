@@ -6,7 +6,8 @@ use byteorder::{BigEndian, ByteOrder};
 pub struct UltraSonicData{
     pub id: u8,
     pub timestamp: u32,
-    pub altitude:f32
+    pub altitude:f32,
+    pub temperature:f32,
 }
 
 impl Data for UltraSonicData{
@@ -15,10 +16,11 @@ impl Data for UltraSonicData{
             id: data[0],
             timestamp: BigEndian::read_u32(&data[4..8]),
             altitude: BigEndian::read_f32(&data[8..12]),
+            temperature: BigEndian::read_f32(&data[12..16]),
         }
     }
     fn get_size() -> usize {
-        12
+        16
     }
     fn get_buf_size() -> usize {
         0

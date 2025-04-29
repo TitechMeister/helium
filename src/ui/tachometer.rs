@@ -1,18 +1,15 @@
-use std::f64::consts::PI;
-
-use eframe::egui::{self, Color32};
-use egui_plot::{Line, PlotPoints};
+use eframe::egui::{self};
 
 use super::AppUI;
 
 pub struct TachUI {
-    offset: f32,
+    offset: i32,
 }
 
 impl TachUI {
     pub fn new() -> Self {
         Self {
-            offset: 0.0,
+            offset: 0,
         }
     }
 }
@@ -36,8 +33,8 @@ impl AppUI for TachUI {
                         self.offset = tach_data.strain;
                     }
                     egui_plot::Plot::new("tach_plot")
-                        .data_aspect(1.0)
                         .show(ui, |plot_ui| {
+                            /*
                             let circle_points: PlotPoints = (0..512)
                                 .map(|i| {
                                     let theta = PI * (i as f64) / 512.0;
@@ -45,17 +42,21 @@ impl AppUI for TachUI {
                                 })
                                 .collect();
                             let theta = (1.0-tach_data.cadence as f64 / 180.0) * PI;
+                            */
+
+                            let point_strain: egui_plot::PlotPoints = data
+                                .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
+                                .iter()
+                                .map(|(data, time)| [*time as f64, data.strain as f64])
+                                .collect();
 
                             plot_ui.line(
-                                Line::new(circle_points).color(Color32::from_rgb(127, 127, 127)),
+                                egui_plot::Line::new(point_strain)
+                                    .color(egui::Color32::from_rgb(0, 64, 255))
+                                    .name("ultra sonic")
+                                    .fill(0.0),
                             );
-                            plot_ui.line(
-                                Line::new(PlotPoints::new(vec![
-                                    [0.0, 0.0],
-                                    [theta.cos(), theta.sin()],
-                                ]))
-                                .color(Color32::from_rgb(255, 0, 0)),
-                            );
+
                         });
                 }
             });
