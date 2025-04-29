@@ -3,7 +3,7 @@ use eframe::egui::{self};
 use super::AppUI;
 
 pub struct TachUI {
-    offset: i32,
+    offset: i64,
 }
 
 impl TachUI {
@@ -46,16 +46,17 @@ impl AppUI for TachUI {
                             */
 
                             if data.get_tach_data(1).len() > 100 {
+                                let firsttime = data.get_tach_data(1)[0].1;
                                 let point_strain: egui_plot::PlotPoints = data
                                     .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
                                     .iter()
-                                    .map(|(data, time)| [*time as f64, data.strain as f64])
+                                    .map(|(data, time)| [ data.strain as f64, (*time-firsttime) as f64])
                                     .collect();
 
                                 plot_ui.line(
                                     egui_plot::Line::new(point_strain)
                                         .color(egui::Color32::from_rgb(0, 64, 255))
-                                        .name("ultra sonic")
+                                        .name("strain")
                                         .fill(0.0),
                                 );
                             }
