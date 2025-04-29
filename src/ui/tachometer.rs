@@ -32,6 +32,7 @@ impl AppUI for TachUI {
                     if ui.button("Set offset").clicked() {
                         self.offset = tach_data.strain;
                     }
+                    
                     egui_plot::Plot::new("tach_plot")
                         .show(ui, |plot_ui| {
                             /*
@@ -44,18 +45,20 @@ impl AppUI for TachUI {
                             let theta = (1.0-tach_data.cadence as f64 / 180.0) * PI;
                             */
 
-                            let point_strain: egui_plot::PlotPoints = data
-                                .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
-                                .iter()
-                                .map(|(data, time)| [*time as f64, data.strain as f64])
-                                .collect();
+                            if data.get_tach_data(1).len() > 100 {
+                                let point_strain: egui_plot::PlotPoints = data
+                                    .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
+                                    .iter()
+                                    .map(|(data, time)| [*time as f64, data.strain as f64])
+                                    .collect();
 
-                            plot_ui.line(
-                                egui_plot::Line::new(point_strain)
-                                    .color(egui::Color32::from_rgb(0, 64, 255))
-                                    .name("ultra sonic")
-                                    .fill(0.0),
-                            );
+                                plot_ui.line(
+                                    egui_plot::Line::new(point_strain)
+                                        .color(egui::Color32::from_rgb(0, 64, 255))
+                                        .name("ultra sonic")
+                                        .fill(0.0),
+                                );
+                            }
 
                         });
                 }
