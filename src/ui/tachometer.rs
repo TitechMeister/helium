@@ -3,7 +3,7 @@ use eframe::egui::{self};
 use super::AppUI;
 
 pub struct TachUI {
-    offset: i64,
+    offset: u32,
 }
 
 impl TachUI {
