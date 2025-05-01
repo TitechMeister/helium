@@ -48,11 +48,11 @@ impl AppUI for TachUI {
                             let tach_data_len = data.get_tach_data(1).len();
 
                             if tach_data_len > 100 {
-                                let firsttime = data.get_tach_data(1)[tach_data_len-100].1;
+                                let lasttime = data.get_tach_data(1)[tach_data_len-1].1;
                                 let point_strain: egui_plot::PlotPoints = data
                                     .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
                                     .iter()
-                                    .map(|(data, time)| [(*time-firsttime) as f64, data.strain as f64])
+                                    .map(|(data, time)| [(*time-lasttime) as f64, data.strain as f64])
                                     .collect();
 
                                 plot_ui.line(
@@ -61,6 +61,7 @@ impl AppUI for TachUI {
                                         .name("strain")
                                         .fill(0.0),
                                 );
+                                plot_ui.auto_bounds();
                             }
 
                         });
