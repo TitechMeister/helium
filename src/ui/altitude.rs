@@ -67,11 +67,13 @@ impl AppUI for AltitudeUI {
                 egui_plot::Plot::new("Altitude")
                     .legend(egui_plot::Legend::default())
                     .show(ui, |plt_ui| {
-                        if data.get_ultra_sonic_data().len() > 100 {
+                        let ultrasonic_len = data.get_ultra_sonic_data().len();
+                        if ultrasonic_len > 100 {
+                            let lasttime = data.get_ultra_sonic_data()[ultrasonic_len - 1].1;
                             let point_ultra_sonic: egui_plot::PlotPoints = data
                                 .get_ultra_sonic_data()[data.get_ultra_sonic_data().len() - 100..]
                                 .iter()
-                                .map(|(data, time)| [*time as f64, data.altitude as f64])
+                                .map(|(data, time)| [(*time - lasttime) as f64, data.altitude as f64])
                                 .collect();
 
                             plt_ui.line(
