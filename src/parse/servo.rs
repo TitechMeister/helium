@@ -5,6 +5,7 @@ use crate::parse::Data;
 #[derive(Debug, Clone, Copy)]
 pub struct ServoData{
     pub id: u8,
+    pub status:u8,
     pub timestamp: u32,
     pub rudder:f32,
     pub elevator:f32,
@@ -12,7 +13,6 @@ pub struct ServoData{
     pub current_rudder:f32,
     pub current_elevator:f32,
     pub trim:f32,
-    pub status:u8,
     pub position_rudder:f32,
     pub position_elevator:f32,
     pub temperature_rudder:f32,
@@ -38,7 +38,7 @@ impl Data for ServoData{
         }
     }
     fn get_size() -> usize {
-        49
+        48
     }
     fn get_buf_size() -> usize {
         0
