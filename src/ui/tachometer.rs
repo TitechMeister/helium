@@ -45,8 +45,10 @@ impl AppUI for TachUI {
                             let theta = (1.0-tach_data.cadence as f64 / 180.0) * PI;
                             */
 
-                            if data.get_tach_data(1).len() > 100 {
-                                let firsttime = data.get_tach_data(1)[0].1;
+                            let tach_data_len = data.get_tach_data(1).len();
+
+                            if tach_data_len > 100 {
+                                let firsttime = data.get_tach_data(1)[tach_data_len-100].1;
                                 let point_strain: egui_plot::PlotPoints = data
                                     .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
                                     .iter()
