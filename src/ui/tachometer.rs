@@ -52,7 +52,7 @@ impl AppUI for TachUI {
                                 let point_strain: egui_plot::PlotPoints = data
                                     .get_tach_data(1)[data.get_tach_data(1).len() - 100..]
                                     .iter()
-                                    .map(|(data, time)| [ data.strain as f64, (*time-firsttime) as f64])
+                                    .map(|(data, time)| [(*time-firsttime) as f64, data.strain as f64])
                                     .collect();
 
                                 plot_ui.line(
