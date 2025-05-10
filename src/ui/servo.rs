@@ -10,6 +10,26 @@ impl ServoUI {
     }
 }
 
+fn rudder_quartic(rudder: f32) -> f32 {
+    let a0 = 1.93;
+    let a1 = 4.16;
+    let a2 = -0.0197;
+    let a3 = 6.16e-3;
+    let a4 = 8.24e-5;
+
+    return a0 + a1 * rudder + a2 * rudder.powi(2) + a3 * rudder.powi(3) + a4 * rudder.powi(4) + 180.0;
+}
+
+fn elevator_quartic(elevator: f32) -> f32 {
+    let a0 = -52.4;
+    let a1 = -5.87;
+    let a2 = -0.338;
+    let a3 = -0.0616;
+    let a4 = -2.58e-3;
+
+    return a0 + a1 * elevator + a2 * elevator.powi(2) + a3 * elevator.powi(3) + a4 * elevator.powi(4) + 180.0;
+}
+
 impl AppUI for ServoUI {
     fn update(&mut self, data: &mut crate::parse::Parser, ctx: &eframe::egui::Context) {
         if let Some((servo_data,_)) = data.get_servo_data().last() {
@@ -47,7 +67,7 @@ impl AppUI for ServoUI {
                             let point_servo: egui_plot::PlotPoints = data
                                 .get_servo_data()[data.get_servo_data().len() - 100..]
                                 .iter()
-                                .map(|(data, time)| [*time as f64, data.rudder as f64])
+                                .map(|(data, time)| [*time as f64, rudder_quartic(data.rudder) as f64])
                                 .collect();
 
                             plot_ui.line(
@@ -77,7 +97,7 @@ impl AppUI for ServoUI {
                             let point_servo: egui_plot::PlotPoints = data
                                 .get_servo_data()[data.get_servo_data().len() - 100..]
                                 .iter()
-                                .map(|(data, time)| [*time as f64, data.elevator as f64])
+                                .map(|(data, time)| [*time as f64, elevator_quartic(data.elevator) as f64])
                                 .collect();
 
                             plot_ui.line(
@@ -105,75 +125,77 @@ impl AppUI for ServoUI {
 
                 });
 
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.rudder / 40.0 + 0.5)
-                        .text(format!("rudder:\t{:2.2}deg", servo_data.rudder)),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.position_rudder / 40.0 + 0.5)
-                        .text(format!("pos_rudder:\t{:2.2}deg", servo_data.position_rudder)),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.elevator / 40.0 + 0.5)
-                        .text(format!("elevator:\t{:2.2}deg", servo_data.elevator)),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.position_elevator / 40.0 + 0.5)
-                        .text(format!("pos_elevator:\t{:2.2}deg", servo_data.position_elevator)),
-                );
+                egui::SidePanel::left("Servo_r_panel").show_inside(ui, |ui| {
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(servo_data.rudder / 40.0 + 0.5)
+                            .text(format!("rudder:\t{:2.2}deg", servo_data.rudder)),
+                    );
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(servo_data.position_rudder / 40.0 + 0.5)
+                            .text(format!("pos_rudder:\t{:2.2}deg", servo_data.position_rudder)),
+                    );
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(servo_data.elevator / 40.0 + 0.5)
+                            .text(format!("elevator:\t{:2.2}deg", servo_data.elevator)),
+                    );
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(servo_data.position_elevator / 40.0 + 0.5)
+                            .text(format!("pos_elevator:\t{:2.2}deg", servo_data.position_elevator)),
+                    );
 
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(servo_data.trim / 15.0 + 0.5)
-                        .text(format!("trim:\t{:2.2}deg", servo_data.trim)),
-                );
-                ui.add_space(15.0);
-                if servo_data.voltage != 0.0 {
                     ui.add(
-                        eframe::egui::widgets::ProgressBar::new(servo_data.voltage / 140.0)
-                            .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 15.0)),
+                        eframe::egui::widgets::ProgressBar::new(servo_data.trim / 15.0 + 0.5)
+                            .text(format!("trim:\t{:2.2}deg", servo_data.trim)),
                     );
-                } else {
+                    ui.add_space(15.0);
+                    if servo_data.voltage != 0.0 {
+                        ui.add(
+                            eframe::egui::widgets::ProgressBar::new(servo_data.voltage / 140.0)
+                                .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 15.0)),
+                        );
+                    } else {
+                        ui.add(
+                            eframe::egui::widgets::ProgressBar::new(0.0)
+                                .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 15.0)),
+                        );
+                    }
                     ui.add(
-                        eframe::egui::widgets::ProgressBar::new(0.0)
-                            .text(format!("voltage:\t{:2.2}V", servo_data.voltage / 15.0)),
+                        eframe::egui::widgets::ProgressBar::new(
+                            servo_data.current_rudder / 2000.0 + 0.5,
+                        )
+                        .text(format!("i_ruuder:\t{:4.2}mA", servo_data.current_rudder)),
                     );
-                }
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(
-                        servo_data.current_rudder / 2000.0 + 0.5,
-                    )
-                    .text(format!("i_ruuder:\t{:4.2}mA", servo_data.current_rudder)),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(
-                        servo_data.temperature_rudder / 100.0 + 0.5,
-                    )
-                    .text(format!(
-                        "t_rudder:\t{:4.2}°C",
-                        servo_data.temperature_rudder
-                    )),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(
-                        servo_data.current_elevator / 2000.0 + 0.5,
-                    )
-                    .text(format!(
-                        "i_elevator:\t{:4.2}mA",
-                        servo_data.current_elevator
-                    )),
-                );
-                ui.add(
-                    eframe::egui::widgets::ProgressBar::new(
-                        servo_data.temperature_elevator / 100.0 + 0.5,
-                    )
-                    .text(format!(
-                        "t_elevator:\t{:4.2}°C",
-                        servo_data.temperature_elevator
-                    )),
-                );
-                ui.heading(format!("status:\t{}", servo_data.status));
-                ui.add_space(15.0);
-                ui.label(format!("time:\t{}", servo_data.timestamp));
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(
+                            servo_data.temperature_rudder / 100.0 + 0.5,
+                        )
+                        .text(format!(
+                            "t_rudder:\t{:4.2}°C",
+                            servo_data.temperature_rudder
+                        )),
+                    );
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(
+                            servo_data.current_elevator / 2000.0 + 0.5,
+                        )
+                        .text(format!(
+                            "i_elevator:\t{:4.2}mA",
+                            servo_data.current_elevator
+                        )),
+                    );
+                    ui.add(
+                        eframe::egui::widgets::ProgressBar::new(
+                            servo_data.temperature_elevator / 100.0 + 0.5,
+                        )
+                        .text(format!(
+                            "t_elevator:\t{:4.2}°C",
+                            servo_data.temperature_elevator
+                        )),
+                    );
+                    ui.heading(format!("status:\t{}", servo_data.status));
+                    ui.add_space(15.0);
+                    ui.label(format!("time:\t{}", servo_data.timestamp));
+                });
             });
         }
     }
